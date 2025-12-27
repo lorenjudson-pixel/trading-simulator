@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Trading Simulator – Live Preview</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<style>
+body{margin:0;font-family:Inter,system-ui;background:#0d1117;color:#e6edf3}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#161b22;border-bottom:1px solid #30363d}
+header h1{font-size:18px;margin:0}
+header button{background:#238636;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer}
+.container{padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:#161b22;border-radius:10px;padding:14px}
+label{font-size:13px;opacity:.9}
+input{width:100%;margin-top:4px;margin-bottom:8px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px}
+input[type=checkbox]{width:auto}
+canvas{background:#0d1117;margin-top:12px}
+.summary{grid-column:1/-1;font-size:18px;margin-top:8px}
+.tableWrap{grid-column:1/-1;max-height:320px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid #30363d;padding:6px;text-align:right}
+th{position:sticky;top:0;background:#161b22}
+th:first-child,td:first-child{text-align:center}
+.worst{background:#3a1c1c}
+</style>
+</head>
+<body>
+<header>
+  <h1>Trading Strategy Simulator v2 (Monthly Risk Calc)</h1>
+  <div>
+    <button id="saveBtn">💾 Save Inputs</button>
+    <button id="previewBtn">▶ Preview</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="card">
+    <h3>Account</h3>
+    <label>Starting Balance ($)</label><input id="start" value="50000" />
+    <label>Years</label><input id="years" value="3" />
+    <label>Tax %</label><input id="tax" value="30" />
+    <label>Target Balance ($)</label><input id="target" value="200000" />
+    <label>Monte Carlo Runs</label><input id="runs" value="500" />
+  </div>
+
+  <div class="card">
+    <h3>Withdrawals (Monthly)</h3>
+    <label>Year 1</label><input id="w1" value="0" />
+    <label>Year 2</label><input id="w2" value="2000" />
+    <label>Year 3</label><input id="w3" value="3000" />
+    <label>Year 4</label><input id="w4" value="3000" />
+    <label>Year 5</label><input id="w5" value="3000" />
+    <label>No Withdrawals for First (months)</label><input id="noWMonths" value="0" type="number" min="0" />
+  </div>
+
+  <div class="card">
+    <h3>Strategy A</h3>
+    <label><input type="checkbox" id="en" checked /> Enable</label>
+    <label>Risk %</label><input id="risk" value="1" />
+    <label>Win Rate %</label><input id="win" value="50" />
+    <label>R:R</label><input id="rr" value="2" />
+    <label>Trades / Month</label><input id="trades" value="20" />
+    <label>Trades Variability ±</label><input id="varA" value="3" />
+  </div>
+
+  <div class="card">
+    <h3>Strategy B</h3>
+    <label><input type="checkbox" id="en2" /> Enable</label>
+    <label>Risk %</label><input id="risk2" value="0.5" />
+    <label>Win Rate %</label><input id="win2" value="45" />
+    <label>R:R</label><input id="rr2" value="2" />
+    <label>Trades / Month</label><input id="trades2" value="10" />
+    <label>Trades Variability ±</label><input id="varB" value="2" />
+  </div>
+
+  <div class="card">
+    <h3>Strategy C</h3>
+    <label><input type="checkbox" id="en3" /> Enable</label>
+    <label>Risk %</label><input id="risk3" value="0.25" />
+    <label>Win Rate %</label><input id="win3" value="55" />
+    <label>R:R</label><input id="rr3" value="1.5" />
+    <label>Trades / Month</label><input id="trades3" value="8" />
+    <label>Trades Variability ±</label><input id="varC" value="2" />
+  </div>
+
+  <div class="summary" id="summary">Click Preview to run simulation</div>
+
+  <div style="grid-column:1/-1">
+    <canvas id="equityChart" height="160"></canvas>
+  </div>
+
+  <div style="grid-column:1/-1">
+    <canvas id="tradeChart" height="140"></canvas>
+  </div>
+
+  <div class="tableWrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Month</th><th>Start</th><th>Gross</th><th>Tax</th><th>Net</th><th>Withdraw</th><th>End</th><th>$/Trade</th><th>Trades</th><th>Wins</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+let equityChart, tradeChart;
+const fmt = n => '$' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0});
+
+function formatCurrency(value) {
+  const num = parseInt(String(value).replace(/[^0-9]/g, '')) || 0;
+  return '$' + num.toLocaleString();
+}
+
+function parseCurrency(value) {
+  return parseInt(String(value).replace(/[^0-9]/g, '')) || 0;
+}
+
+function runSimulation(){
+  const startVal = parseCurrency(document.getElementById('start').value);
+  const yearsN = +document.getElementById('years').value;
+  const taxR = +document.getElementById('tax').value/100;
+  const targetN = parseCurrency(document.getElementById('target').value);
+  const runsN = +document.getElementById('runs').value;
+  const w = [
+    parseCurrency(document.getElementById('w1').value),
+    parseCurrency(document.getElementById('w2').value),
+    parseCurrency(document.getElementById('w3').value),
+    parseCurrency(document.getElementById('w4').value),
+    parseCurrency(document.getElementById('w5').value)
+  ];
+
+  const strategies=[
+    {e:'en',r:'risk',w:'win',rr:'rr',t:'trades',v:'varA'},
+    {e:'en2',r:'risk2',w:'win2',rr:'rr2',t:'trades2',v:'varB'},
+    {e:'en3',r:'risk3',w:'win3',rr:'rr3',t:'trades3',v:'varC'}
+  ].map(s=>({
+    enabled:document.getElementById(s.e),
+    risk:document.getElementById(s.r),
+    win:document.getElementById(s.w),
+    rr:document.getElementById(s.rr),
+    trades:document.getElementById(s.t),
+    var:document.getElementById(s.v)
+  }));
+
+  const noW1=document.getElementById('noWMonths');
+  const noWithdrawMonths = +noW1.value;
+  let labels=[], equity=[], tradesSeries=[], winPctSeries=[], finalBalances=[], blowups=0;
+  let tradesA=[], tradesB=[], tradesC=[];
+  const tbody = document.getElementById('tbody'); tbody.innerHTML='';
+  let above=0, worstGross=Infinity;
+  
+  let maxDrawdownTrades = 0, maxDrawdownAmount = 0;
+  let totalDrawdowns = 0, totalDrawdownTrades = 0, totalDrawdownAmount = 0, drawdownCount = 0;
+  let monthsBelow55 = 0;
+  let largestLosingMonth = 0;
+
+  for(let r=0;r<runsN;r++){
+    let bal=startVal;
+    let monthCounter = 0;
+    for(let y=1;y<=yearsN;y++){
+      for(let m=1;m<=12;m++){
+        monthCounter++;
+        if(bal<=0){bal=0; continue;}
+        
+        const monthStartBal = bal;
+        let gross=0, wins=0, tr=0;
+        let trA=0, trB=0, trC=0;
+        let totalRiskPerTrade = 0;
+        
+        let currentLosses = 0, currentLossAmount = 0;
+        let monthMaxLosses = 0, monthMaxLossAmount = 0;
+        
+        strategies.forEach((s, idx)=>{
+          if(!s.enabled.checked) return;
+          const base=+s.trades.value;
+          const variability=+s.var.value;
+          const tpm=Math.max(0, base + Math.floor(Math.random()*(2*variability+1)) - variability);
+          tr+=tpm;
+          if(idx===0) trA=tpm;
+          if(idx===1) trB=tpm;
+          if(idx===2) trC=tpm;
+          
+          const riskAmt = monthStartBal * (+s.risk.value / 100);
+          totalRiskPerTrade += riskAmt * tpm;
+          
+          for(let i=0;i<tpm;i++){
+            if(Math.random()<+s.win.value/100){
+              wins++; 
+              const profit = riskAmt * +s.rr.value;
+              bal += profit;
+              gross += profit;
+              
+              if(currentLosses > 0) {
+                if(currentLosses > monthMaxLosses) {
+                  monthMaxLosses = currentLosses;
+                  monthMaxLossAmount = currentLossAmount;
+                }
+                currentLosses = 0;
+                currentLossAmount = 0;
+              }
+            } else {
+              bal -= riskAmt; 
+              gross -= riskAmt;
+              
+              currentLosses++;
+              currentLossAmount += riskAmt;
+            }
+          }
+        });
+        
+        if(currentLosses > 0) {
+          if(currentLosses > monthMaxLosses) {
+            monthMaxLosses = currentLosses;
+            monthMaxLossAmount = currentLossAmount;
+          }
+        }
+        
+        if(r === 0) {
+          if(monthMaxLosses > maxDrawdownTrades) {
+            maxDrawdownTrades = monthMaxLosses;
+            maxDrawdownAmount = monthMaxLossAmount;
+          }
+          
+          if(monthMaxLosses > 0) {
+            totalDrawdownTrades += monthMaxLosses;
+            totalDrawdownAmount += monthMaxLossAmount;
+            drawdownCount++;
+          }
+          
+          const monthWinRate = tr > 0 ? (wins / tr * 100) : 0;
+          if(monthWinRate < 55) {
+            monthsBelow55++;
+          }
+          
+          if(gross < largestLosingMonth) {
+            largestLosingMonth = gross;
+          }
+        }
+        
+        const taxAmt=Math.max(0,gross)*taxR; bal-=taxAmt;
+        const netProfit = gross - taxAmt;
+        const wd=(monthCounter > noWithdrawMonths ? (w[y-1]||0) : 0); 
+        bal-=wd;
+        if(bal<0) bal=0;
+        
+        const avgRiskPerTrade = tr > 0 ? (totalRiskPerTrade / tr) : 0;
+
+        if(r===0){
+          labels.push(labels.length+1);
+          equity.push(bal);
+          tradesSeries.push(tr);
+          tradesA.push(trA);
+          tradesB.push(trB);
+          tradesC.push(trC);
+          winPctSeries.push(tr>0 ? (wins/tr*100) : 0);
+          const row=`<tr class="${gross<worstGross?'worst':''}"><td>${labels.length}</td><td>${fmt(monthStartBal)}</td><td>${fmt(gross)}</td><td>${fmt(taxAmt)}</td><td>${fmt(netProfit)}</td><td>${fmt(wd)}</td><td>${fmt(bal)}</td><td>${fmt(avgRiskPerTrade)}</td><td>${tr}</td><td>${wins}</td></tr>`;
+          if(gross<worstGross) worstGross=gross;
+          tbody.innerHTML+=row;
+        }
+      }
+    }
+    finalBalances.push(bal);
+    if(bal>=targetN) above++; if(bal<=0) blowups++;
+  }
+
+  const totalMonths = labels.length;
+  const avgDrawdownTrades = drawdownCount > 0 ? (totalDrawdownTrades / drawdownCount) : 0;
+  const avgDrawdownAmount = drawdownCount > 0 ? (totalDrawdownAmount / drawdownCount) : 0;
+  const monthsBelow55Pct = totalMonths > 0 ? ((monthsBelow55 / totalMonths) * 100) : 0;
+
+  document.getElementById('summary').innerHTML=
+    `Ending Balance: ${fmt(equity.at(-1))} | ≥ Target: ${Math.round(above/runsN*100)}% | Blow‑up: ${Math.round(blowups/runsN*100)}%<br>` +
+    `Max Drawdown: -${maxDrawdownTrades} trades / -${fmt(Math.round(maxDrawdownAmount))}<br>` +
+    `Avg Drawdown: -${Math.round(avgDrawdownTrades)} trades / -${fmt(Math.round(avgDrawdownAmount))}<br>` +
+    `Months Below 55% Win Rate: ${monthsBelow55} (${monthsBelow55Pct.toFixed(1)}%)<br>` +
+    `Largest Losing Month: -${fmt(Math.round(Math.abs(largestLosingMonth)))}`;
+
+  if(equityChart) equityChart.destroy();
+  equityChart=new Chart(document.getElementById('equityChart'),{
+    type:'line',
+    data:{labels,datasets:[{data:equity,borderColor:'#2ea043',backgroundColor:'rgba(46,160,67,.18)',fill:true,tension:0.25,pointRadius:0}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)}}}}
+  });
+
+  if(tradeChart) tradeChart.destroy();
+  tradeChart=new Chart(document.getElementById('tradeChart'),{
+    data:{labels,datasets:[
+      {type:'bar',label:'Strategy A',data:tradesA,yAxisID:'y',backgroundColor:'#8b949e',stack:'trades',order:2},
+      {type:'bar',label:'Strategy B',data:tradesB,yAxisID:'y',backgroundColor:'#a371f7',stack:'trades',order:2},
+      {type:'bar',label:'Strategy C',data:tradesC,yAxisID:'y',backgroundColor:'#f78166',stack:'trades',order:2},
+      {type:'line',label:'Win %',data:winPctSeries,yAxisID:'y1',borderColor:'#58a6ff',backgroundColor:'#58a6ff',borderWidth:2,tension:0.3,pointRadius:3,pointBackgroundColor:'#58a6ff',order:0},
+      {type:'line',label:'50% Threshold',data:labels.map(()=>50),yAxisID:'y1',borderColor:'#ff4d4d',borderWidth:1,pointRadius:0,fill:false,order:1}
+    ]},
+    options:{
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{labels:{color:'#e6edf3'}},
+        datalabels:{
+          display:true,
+          color:'#ffffff',
+          font:{size:11,weight:'bold'},
+          formatter:(value)=>value>0?value.toLocaleString():'',
+          anchor:'center',
+          align:'center'
+        }
+      },
+      scales:{
+        y:{title:{display:true,text:'Trades'},stacked:true},
+        y1:{position:'right',min:0,max:100,title:{display:true,text:'Win %'},ticks:{callback:v=>v+'%'}}
+      }
+    }
+  });
+}
+
+// Format currency inputs on load and input
+const currencyInputs = ['start', 'target', 'w1', 'w2', 'w3', 'w4', 'w5'];
+const numericInputs = ['noWMonths'];
+
+document.getElementById('previewBtn').onclick=runSimulation;
+
+document.getElementById('saveBtn').onclick=()=>{
+  document.querySelectorAll('input').forEach(i=>{
+    let val;
+    if(currencyInputs.includes(i.id)) {
+      val = parseCurrency(i.value);
+    } else if(i.type==='checkbox') {
+      val = i.checked;
+    } else {
+      val = i.value;
+    }
+    localStorage.setItem('sim_'+i.id, val);
+  });
+  document.getElementById('summary').innerText='Inputs saved ✔';
+};
+
+window.onload=()=>{
+  document.querySelectorAll('input').forEach(i=>{
+    const v=localStorage.getItem('sim_'+i.id);
+    if(v!==null) {
+      if(i.type==='checkbox') {
+        i.checked = v==='true';
+      } else if(currencyInputs.includes(i.id)) {
+        i.value = formatCurrency(v);
+      } else {
+        i.value = v;
+      }
+    } else if(currencyInputs.includes(i.id)) {
+      i.value = formatCurrency(i.value);
+    }
+  });
+  
+  currencyInputs.forEach(id => {
+    const input = document.getElementById(id);
+    
+    input.addEventListener('input', (e) => {
+      const cursorPos = e.target.selectionStart;
+      const oldLength = e.target.value.length;
+      e.target.value = formatCurrency(e.target.value);
+      const newLength = e.target.value.length;
+      const diff = newLength - oldLength;
+      e.target.setSelectionRange(cursorPos + diff, cursorPos + diff);
+    });
+    
+    input.addEventListener('blur', (e) => {
+      e.target.value = formatCurrency(e.target.value);
+    });
+  });
+};
+</script>
+</body>
+</html>
