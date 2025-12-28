@@ -12,9 +12,9 @@ header h1{font-size:18px;margin:0}
 header button{background:#238636;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer}
 .container{padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
 .card{background:#161b22;border-radius:10px;padding:14px}
-label{font-size:13px;opacity:.9}
+label{font-size:13px;opacity:.9;display:block}
 input{width:100%;margin-top:4px;margin-bottom:8px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px}
-input[type=checkbox]{width:auto}
+input[type=checkbox]{width:auto;margin-right:6px}
 canvas{background:#0d1117;margin-top:12px}
 .summary{grid-column:1/-1;font-size:18px;margin-top:8px}
 .tableWrap{grid-column:1/-1;max-height:320px;overflow:auto}
@@ -23,6 +23,12 @@ th,td{border-bottom:1px solid #30363d;padding:6px;text-align:right}
 th{position:sticky;top:0;background:#161b22}
 th:first-child,td:first-child{text-align:center}
 .worst{background:#3a1c1c}
+.tooltip{position:relative;display:inline-block;cursor:help;margin-left:4px;color:#58a6ff}
+.tooltip .tooltiptext{visibility:hidden;width:280px;background:#1c2128;color:#e6edf3;text-align:left;border-radius:6px;padding:10px;position:absolute;z-index:1;bottom:125%;left:50%;margin-left:-140px;opacity:0;transition:opacity 0.3s;border:1px solid #30363d;font-size:12px;line-height:1.5}
+.tooltip .tooltiptext::after{content:"";position:absolute;top:100%;left:50%;margin-left:-5px;border-width:5px;border-style:solid;border-color:#30363d transparent transparent transparent}
+.tooltip:hover .tooltiptext{visibility:visible;opacity:1}
+.tooltiptext ul{margin:8px 0;padding-left:20px}
+.tooltiptext li{margin:4px 0}
 </style>
 </head>
 <body>
@@ -38,10 +44,38 @@ th:first-child,td:first-child{text-align:center}
   <div class="card">
     <h3>Account</h3>
     <label>Starting Balance ($)</label><input id="start" value="50000" />
-    <label>Years</label><input id="years" value="3" />
+    <label>Months</label><input id="months" value="36" type="number" min="1" />
     <label>Tax %</label><input id="tax" value="30" />
     <label>Target Balance ($)</label><input id="target" value="200000" />
     <label>Monte Carlo Runs</label><input id="runs" value="500" />
+    <label>
+      <input type="checkbox" id="tysonMode" /> 🥊 Mike Tyson Mode (Brutal Start)
+      <span class="tooltip">ℹ️
+        <span class="tooltiptext">
+          <strong>Early Drawdown Gauntlet (First 5 months):</strong>
+          <ul>
+            <li>2-3 months forced below 55% win rate</li>
+            <li>1-2 months with guaranteed losing streaks of 6+ consecutive losses</li>
+            <li>At least 1 month with win rate reduced by 30%</li>
+          </ul>
+          Tests if your strategy can survive getting "punched in the face" early.
+        </span>
+      </span>
+    </label>
+    <label>
+      <input type="checkbox" id="vacationMode" /> 🏖️ Vacation Mode
+      <span class="tooltip">ℹ️
+        <span class="tooltiptext">
+          <strong>2 weeks vacation in June & December:</strong>
+          <ul>
+            <li>Reduces trades by 50% in these months</li>
+            <li>June: Summer break, family time, slower markets</li>
+            <li>December: Holidays (Christmas/New Year), low liquidity</li>
+          </ul>
+          Models realistic work-life balance and opportunity cost of time off.
+        </span>
+      </span>
+    </label>
   </div>
 
   <div class="card">
@@ -121,7 +155,7 @@ function parseCurrency(value) {
 
 function runSimulation(){
   const startVal = parseCurrency(document.getElementById('start').value);
-  const yearsN = +document.getElementById('years').value;
+  const simulationMonths = +document.getElementById('months').value;
   const taxR = +document.getElementById('tax').value/100;
   const targetN = parseCurrency(document.getElementById('target').value);
   const runsN = +document.getElementById('runs').value;
@@ -148,6 +182,9 @@ function runSimulation(){
 
   const noW1=document.getElementById('noWMonths');
   const noWithdrawMonths = +noW1.value;
+  const tysonMode = document.getElementById('tysonMode').checked;
+  const vacationMode = document.getElementById('vacationMode').checked;
+  
   let labels=[], equity=[], tradesSeries=[], winPctSeries=[], finalBalances=[], blowups=0;
   let tradesA=[], tradesB=[], tradesC=[];
   const tbody = document.getElementById('tbody'); tbody.innerHTML='';
@@ -157,110 +194,175 @@ function runSimulation(){
   let totalDrawdowns = 0, totalDrawdownTrades = 0, totalDrawdownAmount = 0, drawdownCount = 0;
   let monthsBelow55 = 0;
   let largestLosingMonth = 0;
+  
+  // Mike Tyson Mode: Pre-determine which early months get punched
+  let tysonMonths = [];
+  if(tysonMode) {
+    // Randomly select 2-3 months out of first 5 to have below 55% win rate
+    const badWinRateCount = Math.floor(Math.random() * 2) + 2; // 2 or 3 months
+    const losingStreakCount = Math.floor(Math.random() * 2) + 1; // 1 or 2 months
+    const worstOutcomeMonth = Math.floor(Math.random() * 5) + 1; // 1 random month 1-5
+    
+    const availableMonths = [1, 2, 3, 4, 5];
+    const badWinRateMonths = [];
+    const losingStreakMonths = [];
+    
+    // Pick bad win rate months
+    for(let i = 0; i < badWinRateCount; i++) {
+      const idx = Math.floor(Math.random() * availableMonths.length);
+      badWinRateMonths.push(availableMonths.splice(idx, 1)[0]);
+    }
+    
+    // Pick losing streak months from remaining
+    for(let i = 0; i < losingStreakCount && availableMonths.length > 0; i++) {
+      const idx = Math.floor(Math.random() * availableMonths.length);
+      losingStreakMonths.push(availableMonths.splice(idx, 1)[0]);
+    }
+    
+    tysonMonths = {
+      badWinRate: badWinRateMonths,
+      losingStreak: losingStreakMonths,
+      worstOutcome: worstOutcomeMonth
+    };
+  }
 
   for(let r=0;r<runsN;r++){
     let bal=startVal;
     let monthCounter = 0;
-    for(let y=1;y<=yearsN;y++){
-      for(let m=1;m<=12;m++){
-        monthCounter++;
-        if(bal<=0){bal=0; continue;}
+    for(let m=1;m<=simulationMonths;m++){
+      monthCounter++;
+      if(bal<=0){bal=0; continue;}
+      
+      const monthStartBal = bal;
+      let gross=0, wins=0, tr=0;
+      let trA=0, trB=0, trC=0;
+      let totalRiskPerTrade = 0;
+      
+      let currentLosses = 0, currentLossAmount = 0;
+      let monthMaxLosses = 0, monthMaxLossAmount = 0;
+      
+      // Mike Tyson Mode adjustments for this month
+      let isBadWinRateMonth = tysonMode && tysonMonths.badWinRate.includes(monthCounter);
+      let isLosingStreakMonth = tysonMode && tysonMonths.losingStreak.includes(monthCounter);
+      let isWorstOutcomeMonth = tysonMode && tysonMonths.worstOutcome === monthCounter;
+      let forcedLosses = 0;
+      
+      // Vacation Mode: Determine if this is a vacation month (June=6, December=12)
+      const monthOfYear = ((monthCounter - 1) % 12) + 1;
+      const isVacationMonth = vacationMode && (monthOfYear === 6 || monthOfYear === 12);
+      
+      strategies.forEach((s, idx)=>{
+        if(!s.enabled.checked) return;
         
-        const monthStartBal = bal;
-        let gross=0, wins=0, tr=0;
-        let trA=0, trB=0, trC=0;
-        let totalRiskPerTrade = 0;
+        const base=+s.trades.value;
+        const variability=+s.var.value;
+        let tpm=Math.max(0, base + Math.floor(Math.random()*(2*variability+1)) - variability);
         
-        let currentLosses = 0, currentLossAmount = 0;
-        let monthMaxLosses = 0, monthMaxLossAmount = 0;
+        // Reduce trades by 50% during vacation months
+        if(isVacationMonth) {
+          tpm = Math.round(tpm * 0.5);
+        }
         
-        strategies.forEach((s, idx)=>{
-          if(!s.enabled.checked) return;
-          const base=+s.trades.value;
-          const variability=+s.var.value;
-          const tpm=Math.max(0, base + Math.floor(Math.random()*(2*variability+1)) - variability);
-          tr+=tpm;
-          if(idx===0) trA=tpm;
-          if(idx===1) trB=tpm;
-          if(idx===2) trC=tpm;
+        tr+=tpm;
+        if(idx===0) trA=tpm;
+        if(idx===1) trB=tpm;
+        if(idx===2) trC=tpm;
+        
+        const riskAmt = monthStartBal * (+s.risk.value / 100);
+        totalRiskPerTrade += riskAmt * tpm;
+        
+        // Calculate effective win rate for this month
+        let effectiveWinRate = +s.win.value / 100;
+        if(isBadWinRateMonth) {
+          effectiveWinRate = Math.min(effectiveWinRate, 0.48); // Cap at 48% for bad months
+        }
+        if(isWorstOutcomeMonth) {
+          effectiveWinRate = effectiveWinRate * 0.7; // Reduce win rate by 30% for worst month
+        }
+        
+        for(let i=0;i<tpm;i++){
+          let isWin = Math.random() < effectiveWinRate;
           
-          const riskAmt = monthStartBal * (+s.risk.value / 100);
-          totalRiskPerTrade += riskAmt * tpm;
+          // Force losing streak in designated months
+          if(isLosingStreakMonth && i < 6 && forcedLosses < 6) {
+            isWin = false;
+            forcedLosses++;
+          }
           
-          for(let i=0;i<tpm;i++){
-            if(Math.random()<+s.win.value/100){
-              wins++; 
-              const profit = riskAmt * +s.rr.value;
-              bal += profit;
-              gross += profit;
-              
-              if(currentLosses > 0) {
-                if(currentLosses > monthMaxLosses) {
-                  monthMaxLosses = currentLosses;
-                  monthMaxLossAmount = currentLossAmount;
-                }
-                currentLosses = 0;
-                currentLossAmount = 0;
+          if(isWin){
+            wins++; 
+            const profit = riskAmt * +s.rr.value;
+            bal += profit;
+            gross += profit;
+            
+            if(currentLosses > 0) {
+              if(currentLosses > monthMaxLosses) {
+                monthMaxLosses = currentLosses;
+                monthMaxLossAmount = currentLossAmount;
               }
-            } else {
-              bal -= riskAmt; 
-              gross -= riskAmt;
-              
-              currentLosses++;
-              currentLossAmount += riskAmt;
+              currentLosses = 0;
+              currentLossAmount = 0;
             }
-          }
-        });
-        
-        if(currentLosses > 0) {
-          if(currentLosses > monthMaxLosses) {
-            monthMaxLosses = currentLosses;
-            monthMaxLossAmount = currentLossAmount;
-          }
-        }
-        
-        if(r === 0) {
-          if(monthMaxLosses > maxDrawdownTrades) {
-            maxDrawdownTrades = monthMaxLosses;
-            maxDrawdownAmount = monthMaxLossAmount;
-          }
-          
-          if(monthMaxLosses > 0) {
-            totalDrawdownTrades += monthMaxLosses;
-            totalDrawdownAmount += monthMaxLossAmount;
-            drawdownCount++;
-          }
-          
-          const monthWinRate = tr > 0 ? (wins / tr * 100) : 0;
-          if(monthWinRate < 55) {
-            monthsBelow55++;
-          }
-          
-          if(gross < largestLosingMonth) {
-            largestLosingMonth = gross;
+          } else {
+            bal -= riskAmt; 
+            gross -= riskAmt;
+            
+            currentLosses++;
+            currentLossAmount += riskAmt;
           }
         }
+      });
+      
+      if(currentLosses > 0) {
+        if(currentLosses > monthMaxLosses) {
+          monthMaxLosses = currentLosses;
+          monthMaxLossAmount = currentLossAmount;
+        }
+      }
+      
+      if(r === 0) {
+        if(monthMaxLosses > maxDrawdownTrades) {
+          maxDrawdownTrades = monthMaxLosses;
+          maxDrawdownAmount = monthMaxLossAmount;
+        }
         
-        const taxAmt=Math.max(0,gross)*taxR; bal-=taxAmt;
-        const netProfit = gross - taxAmt;
-        const wd=(monthCounter > noWithdrawMonths ? (w[y-1]||0) : 0); 
-        bal-=wd;
-        if(bal<0) bal=0;
+        if(monthMaxLosses > 0) {
+          totalDrawdownTrades += monthMaxLosses;
+          totalDrawdownAmount += monthMaxLossAmount;
+          drawdownCount++;
+        }
         
-        const avgRiskPerTrade = tr > 0 ? (totalRiskPerTrade / tr) : 0;
+        const monthWinRate = tr > 0 ? (wins / tr * 100) : 0;
+        if(monthWinRate < 55) {
+          monthsBelow55++;
+        }
+        
+        if(gross < largestLosingMonth) {
+          largestLosingMonth = gross;
+        }
+      }
+      
+      const taxAmt=Math.max(0,gross)*taxR; bal-=taxAmt;
+      const netProfit = gross - taxAmt;
+      
+      const currentYear = Math.ceil(monthCounter / 12);
+      const wd=(monthCounter > noWithdrawMonths ? (w[currentYear-1]||0) : 0); 
+      bal-=wd;
+      if(bal<0) bal=0;
+      
+      const avgRiskPerTrade = tr > 0 ? (totalRiskPerTrade / tr) : 0;
 
-        if(r===0){
-          labels.push(labels.length+1);
-          equity.push(bal);
-          tradesSeries.push(tr);
-          tradesA.push(trA);
-          tradesB.push(trB);
-          tradesC.push(trC);
-          winPctSeries.push(tr>0 ? (wins/tr*100) : 0);
-          const row=`<tr class="${gross<worstGross?'worst':''}"><td>${labels.length}</td><td>${fmt(monthStartBal)}</td><td>${fmt(gross)}</td><td>${fmt(taxAmt)}</td><td>${fmt(netProfit)}</td><td>${fmt(wd)}</td><td>${fmt(bal)}</td><td>${fmt(avgRiskPerTrade)}</td><td>${tr}</td><td>${wins}</td></tr>`;
-          if(gross<worstGross) worstGross=gross;
-          tbody.innerHTML+=row;
-        }
+      if(r===0){
+        labels.push(labels.length+1);
+        equity.push(bal);
+        tradesSeries.push(tr);
+        tradesA.push(trA);
+        tradesB.push(trB);
+        tradesC.push(trC);
+        winPctSeries.push(tr>0 ? (wins/tr*100) : 0);
+        const row=`<tr class="${gross<worstGross?'worst':''}"><td>${labels.length}</td><td>${fmt(monthStartBal)}</td><td>${fmt(gross)}</td><td>${fmt(taxAmt)}</td><td>${fmt(netProfit)}</td><td>${fmt(wd)}</td><td>${fmt(bal)}</td><td>${fmt(avgRiskPerTrade)}</td><td>${tr}</td><td>${wins}</td></tr>`;
+        if(gross<worstGross) worstGross=gross;
+        tbody.innerHTML+=row;
       }
     }
     finalBalances.push(bal);
@@ -316,7 +418,6 @@ function runSimulation(){
   });
 }
 
-// Format currency inputs on load and input
 const currencyInputs = ['start', 'target', 'w1', 'w2', 'w3', 'w4', 'w5'];
 const numericInputs = ['noWMonths'];
 
