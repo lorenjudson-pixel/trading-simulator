@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Position Size Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #58a6ff;
+            font-size: 2em;
+        }
+
+        .broker-selector {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .broker-toggle {
+            display: inline-flex;
+            gap: 0;
+            background: #161b22;
+            border-radius: 8px;
+            padding: 4px;
+            border: 1px solid #30363d;
+        }
+
+        .broker-btn {
+            padding: 12px 30px;
+            background: transparent;
+            border: none;
+            color: #8b949e;
+            cursor: pointer;
+            font-size: 1em;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .broker-btn.active {
+            background: #238636;
+            color: white;
+        }
+
+        .calculator-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .calculator-row h3 {
+            grid-column: 1 / -1;
+            color: #58a6ff;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 10px;
+        }
+
+        .card {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .card h4 {
+            color: #58a6ff;
+            margin-bottom: 15px;
+            font-size: 1em;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #8b949e;
+            font-size: 0.85em;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            font-size: 0.9em;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 8px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+            font-size: 0.85em;
+        }
+
+        .toggle-btn.active {
+            background: #238636;
+            border-color: #238636;
+            color: white;
+        }
+
+        .toggle-btn.short.active {
+            background: #da3633;
+            border-color: #da3633;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .result-item {
+            background: #161b22;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+        }
+
+        .result-label {
+            color: #8b949e;
+            font-size: 0.75em;
+            margin-bottom: 4px;
+        }
+
+        .result-sublabel {
+            color: #6e7681;
+            font-size: 0.7em;
+            margin-top: 4px;
+        }
+
+        .result-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #58a6ff;
+        }
+
+        .result-value.positive {
+            color: #3fb950;
+        }
+
+        .result-value.negative {
+            color: #f85149;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 1200px) {
+            .calculator-row {
+                grid-template-columns: 1fr;
+            }
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Position Size Calculator</h1>
+        
+        <div class="broker-selector">
+            <div class="broker-toggle">
+                <button class="broker-btn active" id="ninjaBroker">NinjaTrader</button>
+                <button class="broker-btn" id="tosBroker">thinkorswim</button>
+            </div>
+        </div>
+
+        <div id="calculators"></div>
+    </div>
+
+    <script>
+        const instrumentsNinja = {
+            MES: { tickSize: 0.25, tickValue: 1.25, marginID: 50, marginON: 1626, isFutures: true },
+            MNQ: { tickSize: 0.25, tickValue: 0.50, marginID: 100, marginON: 2447, isFutures: true },
+            MGC: { tickSize: 0.10, tickValue: 1.00, marginID: 200, marginON: 1375, isFutures: true },
+            MCL: { tickSize: 0.01, tickValue: 1.00, marginID: 100, marginON: 603, isFutures: true },
+            AUDUSD: { tickSize: 0.0001, tickValue: 1.00, marginID: 240, marginON: 240, isFutures: false },
+            EURUSD: { tickSize: 0.0001, tickValue: 1.00, marginID: 260, marginON: 260, isFutures: false },
+            GBPUSD: { tickSize: 0.0001, tickValue: 1.00, marginID: 320, marginON: 320, isFutures: false },
+            USDCAD: { tickSize: 0.0001, tickValue: 1.00, marginID: 200, marginON: 200, isFutures: false },
+            USDCHF: { tickSize: 0.0001, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false },
+            USDJPY: { tickSize: 0.01, tickValue: 1.00, marginID: 300, marginON: 300, isFutures: false }
+        };
+
+        const instrumentsTOS = {
+            MES: { tickSize: 0.25, tickValue: 1.25, marginID: 1166, marginON: 1166, isFutures: true },
+            MNQ: { tickSize: 0.25, tickValue: 0.50, marginID: 1738, marginON: 1738, isFutures: true },
+            MGC: { tickSize: 0.10, tickValue: 1.00, marginID: 814, marginON: 814, isFutures: true },
+            MCL: { tickSize: 0.01, tickValue: 1.00, marginID: 510, marginON: 510, isFutures: true },
+            AUDUSD: { tickSize: 0.0001, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false },
+            EURUSD: { tickSize: 0.0001, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false },
+            GBPUSD: { tickSize: 0.0001, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false },
+            USDCAD: { tickSize: 0.0001, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false },
+            USDCHF: { tickSize: 0.0001, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false },
+            USDJPY: { tickSize: 0.01, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false }
+        };
+
+        let broker = 'ninja';
+        const calculators = [];
+
+        document.getElementById('ninjaBroker').addEventListener('click', function() {
+            broker = 'ninja';
+            this.classList.add('active');
+            document.getElementById('tosBroker').classList.remove('active');
+            calculators.forEach(calc => calc.calculate());
+        });
+
+        document.getElementById('tosBroker').addEventListener('click', function() {
+            broker = 'tos';
+            this.classList.add('active');
+            document.getElementById('ninjaBroker').classList.remove('active');
+            calculators.forEach(calc => calc.calculate());
+        });
+
+        function createCalculator(index) {
+            const calc = {
+                index: index,
+                direction: 'long',
+                
+                calculate: function() {
+                    const instrumentKey = document.getElementById(`instrument${index}`).value;
+                    const instruments = broker === 'ninja' ? instrumentsNinja : instrumentsTOS;
+                    const instrument = instruments[instrumentKey];
+                    const entry = parseFloat(document.getElementById(`entryPrice${index}`).value) || 0;
+                    const stop = parseFloat(document.getElementById(`stopPrice${index}`).value) || 0;
+                    const limit = parseFloat(document.getElementById(`limitPrice${index}`).value) || 0;
+                    const riskPerTrade = parseFloat(document.getElementById(`riskPerTrade${index}`).value) || 0;
+
+                    if (!entry || !stop || !limit || !riskPerTrade) {
+                        this.clearResults();
+                        return;
+                    }
+
+                    let pointsToStop, pointsToLimit;
+                    if (this.direction === 'long') {
+                        pointsToStop = entry - stop;
+                        pointsToLimit = limit - entry;
+                    } else {
+                        pointsToStop = stop - entry;
+                        pointsToLimit = entry - limit;
+                    }
+
+                    if (pointsToStop <= 0 || pointsToLimit <= 0) {
+                        this.clearResults();
+                        return;
+                    }
+
+                    const ticksToStop = pointsToStop / instrument.tickSize;
+                    const ticksToLimit = pointsToLimit / instrument.tickSize;
+                    const rrUnit = instrument.tickValue;
+                    const riskPerContract = ticksToStop * rrUnit;
+                    const rewardPerContract = ticksToLimit * rrUnit;
+                    const rrRatio = rewardPerContract / riskPerContract;
+                    const contracts = Math.floor(riskPerTrade / riskPerContract);
+                    const totalRisk = contracts * riskPerContract;
+                    const totalReward = contracts * rewardPerContract;
+                    const marginID = contracts * instrument.marginID;
+                    const marginON = contracts * instrument.marginON;
+
+                    document.getElementById(`points${index}`).textContent = pointsToStop.toFixed(2);
+                    document.getElementById(`ticks${index}`).textContent = ticksToStop.toFixed(0);
+                    document.getElementById(`rrUnit${index}`).textContent = '$' + rrUnit.toFixed(2);
+                    document.getElementById(`rrRatio${index}`).textContent = rrRatio.toFixed(2) + ':1';
+                    document.getElementById(`risk${index}`).textContent = '-$' + totalRisk.toFixed(0);
+                    document.getElementById(`reward${index}`).textContent = '$' + totalReward.toFixed(0);
+                    document.getElementById(`contracts${index}`).textContent = contracts;
+                    document.getElementById(`marginID${index}`).textContent = '$' + marginID.toLocaleString();
+                    const marginLabel = instrument.isFutures ? ' per contract' : ' per 10k lot';
+                    document.getElementById(`marginIDPerContract${index}`).textContent = '$' + instrument.marginID.toLocaleString() + marginLabel;
+                    document.getElementById(`marginON${index}`).textContent = '$' + marginON.toLocaleString();
+                    document.getElementById(`marginONPerContract${index}`).textContent = '$' + instrument.marginON.toLocaleString() + marginLabel;
+                },
+
+                clearResults: function() {
+                    document.getElementById(`points${index}`).textContent = '-';
+                    document.getElementById(`ticks${index}`).textContent = '-';
+                    document.getElementById(`rrUnit${index}`).textContent = '-';
+                    document.getElementById(`rrRatio${index}`).textContent = '-';
+                    document.getElementById(`risk${index}`).textContent = '-';
+                    document.getElementById(`reward${index}`).textContent = '-';
+                    document.getElementById(`contracts${index}`).textContent = '-';
+                    document.getElementById(`marginID${index}`).textContent = '-';
+                    document.getElementById(`marginIDPerContract${index}`).textContent = '-';
+                    document.getElementById(`marginON${index}`).textContent = '-';
+                    document.getElementById(`marginONPerContract${index}`).textContent = '-';
+                }
+            };
+
+            return calc;
+        }
+
+        function renderCalculators() {
+            const container = document.getElementById('calculators');
+            
+            for (let i = 1; i <= 5; i++) {
+                const calc = createCalculator(i);
+                calculators.push(calc);
+
+                const html = `
+                    <div class="calculator-row">
+                        <h3>Trade ${i}</h3>
+                        
+                        <div class="card">
+                            <h4>Parameters</h4>
+                            
+                            <div class="input-group">
+                                <label>Instrument</label>
+                                <select id="instrument${i}">
+                                    <option value="MES">MES - Micro E-mini S&P 500</option>
+                                    <option value="MNQ">MNQ - Micro E-mini Nasdaq-100</option>
+                                    <option value="MGC">MGC - Micro Gold</option>
+                                    <option value="MCL">MCL - Micro Crude Oil</option>
+                                    <option value="AUDUSD">AUDUSD - Australian Dollar</option>
+                                    <option value="EURUSD">EURUSD - Euro</option>
+                                    <option value="GBPUSD">GBPUSD - British Pound</option>
+                                    <option value="USDCAD">USDCAD - US Dollar/Canadian Dollar</option>
+                                    <option value="USDCHF">USDCHF - US Dollar/Swiss Franc</option>
+                                    <option value="USDJPY">USDJPY - US Dollar/Japanese Yen</option>
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <label>Direction</label>
+                                <div class="toggle-group">
+                                    <div class="toggle-btn active" id="longBtn${i}">Long</div>
+                                    <div class="toggle-btn short" id="shortBtn${i}">Short</div>
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label>Entry Price</label>
+                                <input type="number" id="entryPrice${i}" step="0.01" placeholder="0.00">
+                            </div>
+
+                            <div class="input-group">
+                                <label>Stop Price</label>
+                                <input type="number" id="stopPrice${i}" step="0.01" placeholder="0.00">
+                            </div>
+
+                            <div class="input-group">
+                                <label>Limit Price (Target)</label>
+                                <input type="number" id="limitPrice${i}" step="0.01" placeholder="0.00">
+                            </div>
+
+                            <div class="input-group">
+                                <label>Risk Per Trade ($)</label>
+                                <input type="number" id="riskPerTrade${i}" step="1" placeholder="1500" value="1500">
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h4>Calculations</h4>
+                            
+                            <div class="results-grid">
+                                <div class="result-item">
+                                    <div class="result-label">Points</div>
+                                    <div class="result-value" id="points${i}">-</div>
+                                </div>
+
+                                <div class="result-item">
+                                    <div class="result-label">Ticks</div>
+                                    <div class="result-value" id="ticks${i}">-</div>
+                                </div>
+
+                                <div class="result-item">
+                                    <div class="result-label">R:R Unit</div>
+                                    <div class="result-value" id="rrUnit${i}">-</div>
+                                </div>
+
+                                <div class="result-item">
+                                    <div class="result-label">R:R Ratio</div>
+                                    <div class="result-value" id="rrRatio${i}">-</div>
+                                </div>
+
+                                <div class="result-item">
+                                    <div class="result-label">Risk</div>
+                                    <div class="result-value negative" id="risk${i}">-</div>
+                                </div>
+
+                                <div class="result-item">
+                                    <div class="result-label">Reward</div>
+                                    <div class="result-value positive" id="reward${i}">-</div>
+                                </div>
+
+                                <div class="result-item full-width">
+                                    <div class="result-label">Contracts/Lots</div>
+                                    <div class="result-value" id="contracts${i}" style="font-size: 1.5em;">-</div>
+                                </div>
+
+                                <div class="result-item">
+                                    <div class="result-label">Margin (Intraday)</div>
+                                    <div class="result-value" id="marginID${i}">-</div>
+                                    <div class="result-sublabel" id="marginIDPerContract${i}">-</div>
+                                </div>
+
+                                <div class="result-item">
+                                    <div class="result-label">Margin (Overnight)</div>
+                                    <div class="result-value" id="marginON${i}">-</div>
+                                    <div class="result-sublabel" id="marginONPerContract${i}">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.insertAdjacentHTML('beforeend', html);
+
+                document.getElementById(`longBtn${i}`).addEventListener('click', function() {
+                    calc.direction = 'long';
+                    this.classList.add('active');
+                    document.getElementById(`shortBtn${i}`).classList.remove('active');
+                    calc.calculate();
+                });
+
+                document.getElementById(`shortBtn${i}`).addEventListener('click', function() {
+                    calc.direction = 'short';
+                    this.classList.add('active');
+                    document.getElementById(`longBtn${i}`).classList.remove('active');
+                    calc.calculate();
+                });
+
+                document.getElementById(`instrument${i}`).addEventListener('change', function() {
+                    document.getElementById(`entryPrice${i}`).value = '';
+                    document.getElementById(`stopPrice${i}`).value = '';
+                    document.getElementById(`limitPrice${i}`).value = '';
+                    calc.calculate();
+                });
+
+                document.getElementById(`entryPrice${i}`).addEventListener('input', () => calc.calculate());
+                document.getElementById(`stopPrice${i}`).addEventListener('input', () => calc.calculate());
+                document.getElementById(`limitPrice${i}`).addEventListener('input', () => calc.calculate());
+                document.getElementById(`riskPerTrade${i}`).addEventListener('input', () => calc.calculate());
+
+                calc.calculate();
+            }
+        }
+
+        renderCalculators();
+    </script>
+</body>
+</html>
