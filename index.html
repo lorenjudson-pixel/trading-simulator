@@ -1,213 +1,375 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Trading Simulator – Live Preview</title>
-<!-- Canvas refresh to restore preview button -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body{margin:0;font-family:Inter,system-ui;background:#0d1117;color:#e6edf3}
-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#161b22;border-bottom:1px solid #30363d}
-header h1{font-size:18px;margin:0}
-header button{background:#238636;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer}
-.container{padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
-.card{background:#161b22;border-radius:10px;padding:14px}
-label{font-size:13px;opacity:.9}
-input{width:100%;margin-top:4px;margin-bottom:8px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px}
-input[type=checkbox]{width:auto}
-canvas{background:#0d1117;margin-top:12px}
-.summary{grid-column:1/-1;font-size:18px;margin-top:8px}
-.tableWrap{grid-column:1/-1;max-height:320px;overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{border-bottom:1px solid #30363d;padding:6px;text-align:right}
-th{position:sticky;top:0;background:#161b22}
-th:first-child,td:first-child{text-align:center}
-.worst{background:#3a1c1c}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Tools - Professional Risk Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #e0e0e0;
+            background: #0a0a0a;
+        }
+
+        .hero-carousel {
+            position: relative;
+            height: 600px;
+            overflow: hidden;
+        }
+
+        .carousel-slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .carousel-slide.active {
+            opacity: 1;
+        }
+
+        .carousel-slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
+        }
+
+        .slide1 {
+            background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80');
+        }
+
+        .slide2 {
+            background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80');
+        }
+
+        .slide3 {
+            background-image: url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80');
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            color: white;
+            padding: 180px 20px 80px;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .hero-content p {
+            font-size: 1.4em;
+            max-width: 700px;
+            margin: 0 auto;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        .carousel-indicators {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 20;
+        }
+
+        .indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .indicator.active {
+            background: white;
+            width: 40px;
+            border-radius: 6px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 20px;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .tool-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #2a2a2a;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+
+        .tool-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .tool-card h2 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            color: #8b9dff;
+        }
+
+        .tool-card p {
+            color: #b0b0b0;
+            font-size: 1.05em;
+            margin-bottom: 25px;
+            line-height: 1.7;
+        }
+
+        .tool-features {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+
+        .tool-features li {
+            padding: 8px 0;
+            color: #d0d0d0;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .tool-features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #8b9dff;
+            font-weight: bold;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 35px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .features-section {
+            background: #0f0f0f;
+            padding: 80px 20px;
+            margin-top: 40px;
+            border-top: 1px solid #2a2a2a;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-item {
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .feature-item h3 {
+            font-size: 1.3em;
+            margin: 15px 0;
+            color: #8b9dff;
+        }
+
+        .feature-item p {
+            color: #b0b0b0;
+        }
+
+        .footer {
+            background: #0a0a0a;
+            color: #888;
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid #2a2a2a;
+        }
+
+        .footer p {
+            font-size: 0.95em;
+        }
+
+        @media (max-width: 768px) {
+            .hero-carousel {
+                height: 500px;
+            }
+
+            .hero-content {
+                padding: 120px 20px 60px;
+            }
+
+            .hero-content h1 {
+                font-size: 2.2em;
+            }
+            
+            .hero-content p {
+                font-size: 1.1em;
+            }
+
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tool-card {
+                padding: 30px;
+            }
+        }
+    </style>
 </head>
 <body>
-<header>
-  <h1>Trading Strategy Simulator (Live Preview)</h1>
-  <div>
-    <button id="saveBtn">💾 Save Inputs</button>
-    <button id="previewBtn">▶ Preview</button>
-  </div>
-</header>
+    <div class="hero-carousel">
+        <div class="carousel-slide slide1 active">
+            <div class="hero-content">
+                <h1>Professional Trading Tools</h1>
+                <p>Advanced risk management and analysis tools for serious traders</p>
+            </div>
+        </div>
+        <div class="carousel-slide slide2">
+            <div class="hero-content">
+                <h1>Master Your Risk</h1>
+                <p>Calculate position sizes with precision and confidence</p>
+            </div>
+        </div>
+        <div class="carousel-slide slide3">
+            <div class="hero-content">
+                <h1>Trade Smarter</h1>
+                <p>Simulate strategies before risking real capital</p>
+            </div>
+        </div>
+        <div class="carousel-indicators">
+            <div class="indicator active" data-slide="0"></div>
+            <div class="indicator" data-slide="1"></div>
+            <div class="indicator" data-slide="2"></div>
+        </div>
+    </div>
 
-<div class="container">
-  <div class="card">
-    <h3>Account</h3>
-    <label>Starting Balance ($)</label><input id="start" value="50000" />
-    <label>Years</label><input id="years" value="3" />
-    <label>Tax %</label><input id="tax" value="30" />
-    <label>Target Balance ($)</label><input id="target" value="200000" />
-    <label>Monte Carlo Runs</label><input id="runs" value="500" />
-  </div>
+    <div class="container">
+        <div class="tools-grid">
+            <div class="tool-card">
+                <div class="tool-icon">📊</div>
+                <h2>Position Size Calculator</h2>
+                <p>Calculate optimal position sizes based on your risk tolerance and account size. Get instant feedback on margin requirements and risk-reward ratios.</p>
+                <ul class="tool-features">
+                    <li>Real-time position sizing</li>
+                    <li>Risk/reward analysis</li>
+                    <li>Multiple broker support (NinjaTrader, TD Ameritrade)</li>
+                    <li>Margin requirement calculations</li>
+                    <li>Auto-save your trades</li>
+                </ul>
+                <a href="calculator.html" class="btn">Launch Calculator</a>
+            </div>
 
-  <div class="card">
-    <h3>Withdrawals (Monthly)</h3>
-    <label>Year 1</label><input id="w1" value="0" />
-    <label>Year 2</label><input id="w2" value="2000" />
-    <label>Year 3</label><input id="w3" value="3000" />
-    <label>Year 4</label><input id="w4" value="3000" />
-    <label>Year 5</label><input id="w5" value="3000" />
-    <label><input type="checkbox" id="noW1" /> No withdrawals Year 1</label>
-  </div>
+            <div class="tool-card">
+                <div class="tool-icon">🎯</div>
+                <h2>Trading Simulator</h2>
+                <p>Practice your trading strategies with our Monte Carlo simulation engine. Test your edge before risking real capital.</p>
+                <ul class="tool-features">
+                    <li>Monte Carlo simulation</li>
+                    <li>Win rate & profit factor analysis</li>
+                    <li>Drawdown visualization</li>
+                    <li>Risk of ruin calculations</li>
+                    <li>Strategy backtesting</li>
+                </ul>
+                <a href="trading-sim-v2.html" class="btn">Launch Simulator</a>
+            </div>
+        </div>
+    </div>
 
-  <div class="card">
-    <h3>Strategy A</h3>
-    <label><input type="checkbox" id="en" checked /> Enable</label>
-    <label>Risk %</label><input id="risk" value="1" />
-    <label>Win Rate %</label><input id="win" value="50" />
-    <label>R:R</label><input id="rr" value="2" />
-    <label>Trades / Month</label><input id="trades" value="20" />
-    <label>Trades Variability ±</label><input id="varA" value="3" />
-  </div>
+    <div class="features-section">
+        <div class="features-grid">
+            <div class="feature-item">
+                <h3>🔒 100% Private</h3>
+                <p>All calculations run locally in your browser. Your data never leaves your device.</p>
+            </div>
+            <div class="feature-item">
+                <h3>⚡ Real-time Updates</h3>
+                <p>Instant calculations as you type. No waiting, no delays.</p>
+            </div>
+            <div class="feature-item">
+                <h3>💾 Auto-save</h3>
+                <p>Your settings and trades are automatically saved to your browser.</p>
+            </div>
+            <div class="feature-item">
+                <h3>📱 Mobile Ready</h3>
+                <p>Works seamlessly on desktop, tablet, and mobile devices.</p>
+            </div>
+        </div>
+    </div>
 
-  <div class="card">
-    <h3>Strategy B</h3>
-    <label><input type="checkbox" id="en2" /> Enable</label>
-    <label>Risk %</label><input id="risk2" value="0.5" />
-    <label>Win Rate %</label><input id="win2" value="45" />
-    <label>R:R</label><input id="rr2" value="2" />
-    <label>Trades / Month</label><input id="trades2" value="10" />
-    <label>Trades Variability ±</label><input id="varB" value="2" />
-  </div>
+    <div class="footer">
+        <p>&copy; 2025 Trading Tools. Built for traders, by traders.</p>
+    </div>
 
-  <div class="card">
-    <h3>Strategy C</h3>
-    <label><input type="checkbox" id="en3" /> Enable</label>
-    <label>Risk %</label><input id="risk3" value="0.25" />
-    <label>Win Rate %</label><input id="win3" value="55" />
-    <label>R:R</label><input id="rr3" value="1.5" />
-    <label>Trades / Month</label><input id="trades3" value="8" />
-    <label>Trades Variability ±</label><input id="varC" value="2" />
-  </div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.carousel-slide');
+        const indicators = document.querySelectorAll('.indicator');
 
-  <div class="summary" id="summary">Click Preview to run simulation</div>
-
-  <div style="grid-column:1/-1">
-    <canvas id="equityChart" height="160"></canvas>
-  </div>
-
-  <div style="grid-column:1/-1">
-    <canvas id="tradeChart" height="140"></canvas>
-  </div>
-
-  <div class="tableWrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Month</th><th>Start</th><th>Gross</th><th>Tax</th><th>Withdraw</th><th>End</th><th>Trades</th><th>Wins</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
-</div>
-
-<script>
-let equityChart, tradeChart;
-const fmt = n => Number(n).toLocaleString(undefined,{maximumFractionDigits:0});
-
-function runSimulation(){
-  const startVal = +document.getElementById('start').value;
-  const yearsN = +document.getElementById('years').value;
-  const taxR = +document.getElementById('tax').value/100;
-  const targetN = +document.getElementById('target').value;
-  const runsN = +document.getElementById('runs').value;
-  const w = [
-    +document.getElementById('w1').value,
-    +document.getElementById('w2').value,
-    +document.getElementById('w3').value,
-    +document.getElementById('w4').value,
-    +document.getElementById('w5').value
-  ];
-
-  const strategies=[
-    {e:'en',r:'risk',w:'win',rr:'rr',t:'trades',v:'varA'},
-    {e:'en2',r:'risk2',w:'win2',rr:'rr2',t:'trades2',v:'varB'},
-    {e:'en3',r:'risk3',w:'win3',rr:'rr3',t:'trades3',v:'varC'}
-  ].map(s=>({
-    enabled:document.getElementById(s.e),
-    risk:document.getElementById(s.r),
-    win:document.getElementById(s.w),
-    rr:document.getElementById(s.rr),
-    trades:document.getElementById(s.t),
-    var:document.getElementById(s.v)
-  }));
-
-  const noW1=document.getElementById('noW1');
-  let labels=[], equity=[], tradesSeries=[], winPctSeries=[], finalBalances=[], blowups=0;
-  const tbody = document.getElementById('tbody'); tbody.innerHTML='';
-  let above=0, worstGross=Infinity;
-
-  for(let r=0;r<runsN;r++){
-    let bal=startVal;
-    for(let y=1;y<=yearsN;y++){
-      for(let m=1;m<=12;m++){
-        if(bal<=0){bal=0; continue;}
-        let startBal=bal, gross=0, wins=0, tr=0;
-        strategies.forEach(s=>{
-          if(!s.enabled.checked) return;
-          const base=+s.trades.value;
-          const variability=+s.var.value;
-          const tpm=Math.max(0, base + Math.floor(Math.random()*(2*variability+1)) - variability);
-          tr+=tpm;
-          for(let i=0;i<tpm;i++){
-            const riskAmt=bal*(+s.risk.value/100);
-            if(Math.random()<+s.win.value/100){wins++; bal+=riskAmt*+s.rr.value; gross+=riskAmt*+s.rr.value;}
-            else{bal-=riskAmt; gross-=riskAmt;}
-          }
-        });
-        const taxAmt=Math.max(0,gross)*taxR; bal-=taxAmt;
-        const wd=(!(y===1 && noW1.checked)?(w[y-1]||0):0); bal-=wd;
-        if(bal<0) bal=0;
-
-        if(r===0){
-          labels.push(labels.length+1);
-          equity.push(bal);
-          tradesSeries.push(tr);
-          winPctSeries.push(tr>0 ? (wins/tr*100) : 0);
-          const row=`<tr class="${gross<worstGross?'worst':''}"><td>${labels.length}</td><td>${fmt(startBal)}</td><td>${fmt(gross)}</td><td>${fmt(taxAmt)}</td><td>${fmt(wd)}</td><td>${fmt(bal)}</td><td>${tr}</td><td>${wins}</td></tr>`;
-          if(gross<worstGross) worstGross=gross;
-          tbody.innerHTML+=row;
+        function showSlide(index) {
+            slides.forEach(slide => slide.classList.remove('active'));
+            indicators.forEach(indicator => indicator.classList.remove('active'));
+            
+            slides[index].classList.add('active');
+            indicators[index].classList.add('active');
         }
-      }
-    }
-    finalBalances.push(bal);
-    if(bal>=targetN) above++; if(bal<=0) blowups++;
-  }
 
-  document.getElementById('summary').innerText=
-    `Ending Balance: $${fmt(equity.at(-1))} | ≥ Target: ${Math.round(above/runsN*100)}% | Blow‑up: ${Math.round(blowups/runsN*100)}%`;
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % slides.length;
+            showSlide(currentSlide);
+        }
 
-  if(equityChart) equityChart.destroy();
-  equityChart=new Chart(document.getElementById('equityChart'),{
-    type:'line',
-    data:{labels,datasets:[{data:equity,borderColor:'#2ea043',backgroundColor:'rgba(46,160,67,.18)',fill:true,tension:0.25,pointRadius:0}]},
-    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'$'+fmt(v)}}}}
-  });
+        indicators.forEach((indicator, index) => {
+            indicator.addEventListener('click', () => {
+                currentSlide = index;
+                showSlide(currentSlide);
+            });
+        });
 
-  if(tradeChart) tradeChart.destroy();
-  tradeChart=new Chart(document.getElementById('tradeChart'),{
-    data:{labels,datasets:[
-      {type:'bar',label:'Trades Taken',data:tradesSeries,yAxisID:'y',backgroundColor:'rgba(140,140,140,0.6)',order:1},
-      {type:'line',label:'Win %',data:winPctSeries,yAxisID:'y1',borderColor:'#58a6ff',backgroundColor:'#58a6ff',tension:0.3,pointRadius:2,order:0},{type:'line',label:'50% Threshold',data:labels.map(()=>50),yAxisID:'y1',borderColor:'#ff4d4d',borderWidth:1,pointRadius:0,fill:false,order:-1}
-    ]},
-    options:{interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:'#e6edf3'}}},scales:{y:{title:{display:true,text:'Trades'}},y1:{position:'right',min:0,max:100,title:{display:true,text:'Win %'},ticks:{callback:v=>v+'%'}}}}
-  });
-}
-
-document.getElementById('previewBtn').onclick=runSimulation;
-document.getElementById('saveBtn').onclick=()=>{
-  document.querySelectorAll('input').forEach(i=>localStorage.setItem('sim_'+i.id,i.type==='checkbox'?i.checked:i.value));
-  document.getElementById('summary').innerText='Inputs saved ✔';
-};
-window.onload=()=>document.querySelectorAll('input').forEach(i=>{
-  const v=localStorage.getItem('sim_'+i.id);
-  if(v!==null) i.type==='checkbox'?i.checked=v==='true':i.value=v;
-});
-</script>
+        setInterval(nextSlide, 5000);
+    </script>
 </body>
 </html>
