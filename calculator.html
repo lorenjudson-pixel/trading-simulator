@@ -40,6 +40,156 @@
             text-align: center;
         }
 
+        .chart-analyzer {
+            background: #161b22;
+            border: 2px solid #30363d;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .chart-analyzer h2 {
+            color: #58a6ff;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .upload-area {
+            border: 2px dashed #30363d;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #58a6ff;
+            background: #0d1117;
+        }
+
+        .upload-area.dragover {
+            border-color: #58a6ff;
+            background: #0d1117;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+            color: #58a6ff;
+        }
+
+        .upload-text {
+            color: #8b949e;
+            font-size: 1.1em;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .preview-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+        }
+
+        .analyze-btn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .analysis-result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #0d1117;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            display: none;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            color: #8b949e;
+        }
+
+        .result-value {
+            color: #58a6ff;
+            font-weight: 600;
+        }
+
+        .error-message {
+            color: #f85149;
+            margin-top: 10px;
+            padding: 15px;
+            background: rgba(248, 81, 73, 0.1);
+            border-radius: 6px;
+            display: none;
+        }
+
+        .loading {
+            color: #58a6ff;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .trade-selector {
+            margin-top: 20px;
+        }
+
+        .trade-selector label {
+            display: block;
+            color: #8b949e;
+            margin-bottom: 10px;
+        }
+
+        .trade-selector select {
+            width: 100%;
+            padding: 10px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            font-size: 1em;
+        }
+
         .global-risk label {
             display: block;
             color: #58a6ff;
@@ -275,6 +425,42 @@
         input:focus, select:focus {
             outline: none;
             border-color: #58a6ff;
+        }
+
+        .price-input {
+            font-size: 1.3em;
+            font-weight: bold;
+            padding: 12px;
+        }
+
+        #entryPrice1, #entryPrice2, #entryPrice3, #entryPrice4, #entryPrice5 {
+            color: #f0ad4e;
+            border-color: #f0ad4e;
+        }
+
+        #entryPrice1:focus, #entryPrice2:focus, #entryPrice3:focus, #entryPrice4:focus, #entryPrice5:focus {
+            border-color: #f0ad4e;
+            box-shadow: 0 0 0 2px rgba(240, 173, 78, 0.2);
+        }
+
+        #stopPrice1, #stopPrice2, #stopPrice3, #stopPrice4, #stopPrice5 {
+            color: #f85149;
+            border-color: #f85149;
+        }
+
+        #stopPrice1:focus, #stopPrice2:focus, #stopPrice3:focus, #stopPrice4:focus, #stopPrice5:focus {
+            border-color: #f85149;
+            box-shadow: 0 0 0 2px rgba(248, 81, 73, 0.2);
+        }
+
+        #limitPrice1, #limitPrice2, #limitPrice3, #limitPrice4, #limitPrice5 {
+            color: #3fb950;
+            border-color: #3fb950;
+        }
+
+        #limitPrice1:focus, #limitPrice2:focus, #limitPrice3:focus, #limitPrice4:focus, #limitPrice5:focus {
+            border-color: #3fb950;
+            box-shadow: 0 0 0 2px rgba(63, 185, 80, 0.2);
         }
 
         .toggle-group {
@@ -627,12 +813,14 @@
             parts.push('<div class="toggle-btn active" id="longBtn' + i + '">Long</div>');
             parts.push('<div class="toggle-btn short" id="shortBtn' + i + '">Short</div>');
             parts.push('</div></div>');
-            parts.push('<div class="input-group"><label>Entry Price</label>');
-            parts.push('<input type="number" id="entryPrice' + i + '" step="0.01" placeholder="0.00"></div>');
-            parts.push('<div class="input-group"><label>Stop Price</label>');
-            parts.push('<input type="number" id="stopPrice' + i + '" step="0.01" placeholder="0.00"></div>');
+            parts.push('<div id="priceInputs' + i + '">');
             parts.push('<div class="input-group"><label>Limit Price (Target)</label>');
-            parts.push('<input type="number" id="limitPrice' + i + '" step="0.01" placeholder="0.00"></div>');
+            parts.push('<input type="number" class="price-input" id="limitPrice' + i + '" step="0.01" placeholder="0.00"></div>');
+            parts.push('<div class="input-group"><label>Entry Price</label>');
+            parts.push('<input type="number" class="price-input" id="entryPrice' + i + '" step="0.01" placeholder="0.00"></div>');
+            parts.push('<div class="input-group"><label>Stop Price</label>');
+            parts.push('<input type="number" class="price-input" id="stopPrice' + i + '" step="0.01" placeholder="0.00"></div>');
+            parts.push('</div>');
             parts.push('</div><div class="card"><h4>Calculations</h4><div class="results-grid">');
             parts.push('<div class="result-item"><div class="result-label">Points</div><div class="result-value" id="points' + i + '">-</div></div>');
             parts.push('<div class="result-item"><div class="result-label">R:R Ratio</div><div class="result-value" id="rrRatio' + i + '">-</div></div>');
@@ -648,6 +836,25 @@
             parts.push('<div class="result-sublabel" id="marginONPerContract' + i + '">-</div></div>');
             parts.push('</div></div>');
             return parts.join('');
+        }
+
+        function reorderPriceInputs(index, direction) {
+            var container = document.getElementById('priceInputs' + index);
+            var limitDiv = container.querySelector('#limitPrice' + index).parentElement;
+            var entryDiv = container.querySelector('#entryPrice' + index).parentElement;
+            var stopDiv = container.querySelector('#stopPrice' + index).parentElement;
+            
+            container.innerHTML = '';
+            
+            if (direction === 'long') {
+                container.appendChild(limitDiv);
+                container.appendChild(entryDiv);
+                container.appendChild(stopDiv);
+            } else {
+                container.appendChild(stopDiv);
+                container.appendChild(entryDiv);
+                container.appendChild(limitDiv);
+            }
         }
 
         function renderCalculators() {
@@ -676,6 +883,7 @@
                         if (state.direction === 'short') {
                             document.getElementById('shortBtn' + i).classList.add('active');
                             document.getElementById('longBtn' + i).classList.remove('active');
+                            reorderPriceInputs(i, 'short');
                         }
                         
                         if (state.broker === 'tos') {
@@ -704,6 +912,7 @@
                         calc.direction = 'long';
                         this.classList.add('active');
                         document.getElementById('shortBtn' + i).classList.remove('active');
+                        reorderPriceInputs(i, 'long');
                         saveState(i);
                         calc.calculate();
                     });
@@ -712,6 +921,7 @@
                         calc.direction = 'short';
                         this.classList.add('active');
                         document.getElementById('longBtn' + i).classList.remove('active');
+                        reorderPriceInputs(i, 'short');
                         saveState(i);
                         calc.calculate();
                     });
