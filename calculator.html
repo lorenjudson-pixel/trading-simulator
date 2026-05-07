@@ -5,955 +5,106 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Position Size Calculator</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #0d1117;
-            color: #c9d1d9;
-            padding: 20px;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #58a6ff;
-            font-size: 2em;
-        }
-
-        .global-risk {
-            background: #161b22;
-            border: 2px solid #30363d;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .chart-analyzer {
-            background: #161b22;
-            border: 2px solid #30363d;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 30px;
-        }
-
-        .chart-analyzer h2 {
-            color: #58a6ff;
-            font-size: 1.3em;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .upload-area {
-            border: 2px dashed #30363d;
-            border-radius: 8px;
-            padding: 40px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 20px;
-        }
-
-        .upload-area:hover {
-            border-color: #58a6ff;
-            background: #0d1117;
-        }
-
-        .upload-area.dragover {
-            border-color: #58a6ff;
-            background: #0d1117;
-        }
-
-        .upload-icon {
-            font-size: 3em;
-            margin-bottom: 10px;
-            color: #58a6ff;
-        }
-
-        .upload-text {
-            color: #8b949e;
-            font-size: 1.1em;
-        }
-
-        #fileInput {
-            display: none;
-        }
-
-        .preview-container {
-            margin-top: 20px;
-            display: none;
-        }
-
-        .preview-image {
-            max-width: 100%;
-            max-height: 400px;
-            border-radius: 8px;
-            border: 1px solid #30363d;
-        }
-
-        .analyze-btn {
-            margin-top: 20px;
-            padding: 15px 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .analyze-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .analyze-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .analysis-result {
-            margin-top: 20px;
-            padding: 20px;
-            background: #0d1117;
-            border-radius: 8px;
-            border: 1px solid #30363d;
-            display: none;
-        }
-
-        .result-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #30363d;
-        }
-
-        .result-item:last-child {
-            border-bottom: none;
-        }
-
-        .result-label {
-            color: #8b949e;
-        }
-
-        .result-value {
-            color: #58a6ff;
-            font-weight: 600;
-        }
-
-        .error-message {
-            color: #f85149;
-            margin-top: 10px;
-            padding: 15px;
-            background: rgba(248, 81, 73, 0.1);
-            border-radius: 6px;
-            display: none;
-        }
-
-        .loading {
-            color: #58a6ff;
-            margin-top: 10px;
-            display: none;
-        }
-
-        .trade-selector {
-            margin-top: 20px;
-        }
-
-        .trade-selector label {
-            display: block;
-            color: #8b949e;
-            margin-bottom: 10px;
-        }
-
-        .trade-selector select {
-            width: 100%;
-            padding: 10px;
-            background: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            color: #c9d1d9;
-            font-size: 1em;
-        }
-
-        .global-risk label {
-            display: block;
-            color: #58a6ff;
-            font-size: 1.1em;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-
-        .global-risk input {
-            width: 300px;
-            max-width: 100%;
-            padding: 12px;
-            background: #0d1117;
-            border: 2px solid #30363d;
-            border-radius: 8px;
-            color: #c9d1d9;
-            font-size: 1.2em;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .global-risk input:focus {
-            outline: none;
-            border-color: #58a6ff;
-        }
-
-        .margin-summary {
-            background: #161b22;
-            border: 2px solid #30363d;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 30px;
-        }
-
-        .summary-header {
-            text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #30363d;
-        }
-
-        .summary-header h2 {
-            color: #58a6ff;
-            font-size: 1.3em;
-            margin: 0;
-        }
-
-        .summary-totals {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .total-column {
-            background: #0d1117;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #30363d;
-            text-align: center;
-        }
-
-        .total-label {
-            color: #8b949e;
-            font-size: 0.9em;
-            margin-bottom: 10px;
-        }
-
-        .total-value {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #58a6ff;
-        }
-
-        .summary-breakdown {
-            background: #0d1117;
-            border-radius: 8px;
-            border: 1px solid #30363d;
-            overflow: hidden;
-        }
-
-        .breakdown-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .breakdown-table thead {
-            background: #161b22;
-        }
-
-        .breakdown-table th {
-            padding: 12px 16px;
-            text-align: left;
-            color: #8b949e;
-            font-size: 0.85em;
-            font-weight: 600;
-            border-bottom: 1px solid #30363d;
-        }
-
-        .breakdown-table th:first-child {
-            width: 40%;
-        }
-
-        .breakdown-table th:nth-child(2),
-        .breakdown-table th:nth-child(3) {
-            width: 30%;
-            text-align: right;
-        }
-
-        .breakdown-table td {
-            padding: 12px 16px;
-            color: #c9d1d9;
-            border-bottom: 1px solid #30363d;
-        }
-
-        .breakdown-table td:nth-child(2),
-        .breakdown-table td:nth-child(3) {
-            text-align: right;
-        }
-
-        .breakdown-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .breakdown-table tbody tr:hover {
-            background: #161b22;
-        }
-
-        .breakdown-instrument {
-            color: #58a6ff;
-            font-weight: 600;
-        }
-
-        .breakdown-value {
-            color: #58a6ff;
-            font-weight: bold;
-        }
-
-        .no-trades {
-            padding: 20px;
-            text-align: center;
-            color: #8b949e;
-        }
-
-        .calculator-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        .row-header {
-            grid-column: 1 / -1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #30363d;
-            padding-bottom: 10px;
-        }
-
-        .row-header h3 {
-            color: #58a6ff;
-            font-size: 1.1em;
-            margin: 0;
-        }
-
-        .broker-toggle-small {
-            display: flex;
-            gap: 0;
-            background: #0d1117;
-            border-radius: 6px;
-            padding: 3px;
-            border: 1px solid #30363d;
-        }
-
-        .broker-btn-small {
-            padding: 6px 16px;
-            background: transparent;
-            border: none;
-            color: #8b949e;
-            cursor: pointer;
-            font-size: 0.85em;
-            border-radius: 4px;
-            transition: all 0.3s;
-        }
-
-        .broker-btn-small.active {
-            background: #238636;
-            color: white;
-        }
-
-        .card {
-            background: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 15px;
-        }
-
-        .card h4 {
-            color: #58a6ff;
-            margin-bottom: 15px;
-            font-size: 1em;
-            border-bottom: 1px solid #30363d;
-            padding-bottom: 8px;
-        }
-
-        .input-group {
-            margin-bottom: 12px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #8b949e;
-            font-size: 0.85em;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 8px;
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            color: #c9d1d9;
-            font-size: 0.9em;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: #58a6ff;
-        }
-
-        .price-input {
-            font-size: 1.3em;
-            font-weight: bold;
-            padding: 12px;
-        }
-
-        #entryPrice1, #entryPrice2, #entryPrice3, #entryPrice4, #entryPrice5 {
-            color: #f0ad4e;
-            border-color: #f0ad4e;
-        }
-
-        #entryPrice1:focus, #entryPrice2:focus, #entryPrice3:focus, #entryPrice4:focus, #entryPrice5:focus {
-            border-color: #f0ad4e;
-            box-shadow: 0 0 0 2px rgba(240, 173, 78, 0.2);
-        }
-
-        #stopPrice1, #stopPrice2, #stopPrice3, #stopPrice4, #stopPrice5 {
-            color: #f85149;
-            border-color: #f85149;
-        }
-
-        #stopPrice1:focus, #stopPrice2:focus, #stopPrice3:focus, #stopPrice4:focus, #stopPrice5:focus {
-            border-color: #f85149;
-            box-shadow: 0 0 0 2px rgba(248, 81, 73, 0.2);
-        }
-
-        #limitPrice1, #limitPrice2, #limitPrice3, #limitPrice4, #limitPrice5 {
-            color: #3fb950;
-            border-color: #3fb950;
-        }
-
-        #limitPrice1:focus, #limitPrice2:focus, #limitPrice3:focus, #limitPrice4:focus, #limitPrice5:focus {
-            border-color: #3fb950;
-            box-shadow: 0 0 0 2px rgba(63, 185, 80, 0.2);
-        }
-
-        .toggle-group {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .toggle-btn {
-            flex: 1;
-            padding: 8px;
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            color: #c9d1d9;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s;
-            font-size: 0.85em;
-        }
-
-        .toggle-btn.active {
-            background: #238636;
-            border-color: #238636;
-            color: white;
-        }
-
-        .toggle-btn.short.active {
-            background: #da3633;
-            border-color: #da3633;
-        }
-
-        .results-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-
-        .result-item {
-            background: #161b22;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #30363d;
-        }
-
-        .result-label {
-            color: #8b949e;
-            font-size: 0.75em;
-            margin-bottom: 4px;
-        }
-
-        .result-sublabel {
-            color: #6e7681;
-            font-size: 0.7em;
-            margin-top: 4px;
-        }
-
-        .result-value {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #58a6ff;
-        }
-
-        .result-value.positive {
-            color: #3fb950;
-        }
-
-        .result-value.negative {
-            color: #f85149;
-        }
-
-        @media (max-width: 1200px) {
-            .calculator-row {
-                grid-template-columns: 1fr;
-            }
-            .results-grid {
-                grid-template-columns: 1fr;
-            }
-            .summary-totals {
-                grid-template-columns: 1fr;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; padding: 20px; line-height: 1.6; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 20px; color: #58a6ff; font-size: 2em; }
+        .global-risk { background: #161b22; border: 2px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 30px; text-align: center; }
+        .global-risk label { display: block; color: #58a6ff; font-size: 1.1em; font-weight: 600; margin-bottom: 10px; }
+        .global-risk input { width: 300px; max-width: 100%; padding: 12px; background: #0d1117; border: 2px solid #30363d; border-radius: 8px; color: #c9d1d9; font-size: 1.2em; text-align: center; font-weight: bold; }
+        .global-risk input:focus { outline: none; border-color: #58a6ff; }
+        .margin-summary { background: #161b22; border: 2px solid #30363d; border-radius: 12px; padding: 25px; margin-bottom: 30px; }
+        .summary-header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #30363d; }
+        .summary-header h2 { color: #58a6ff; font-size: 1.3em; margin: 0; }
+        .summary-totals { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .total-column { background: #0d1117; padding: 20px; border-radius: 8px; border: 1px solid #30363d; text-align: center; }
+        .total-label { color: #8b949e; font-size: 0.9em; margin-bottom: 10px; }
+        .total-value { font-size: 2.5em; font-weight: bold; color: #58a6ff; }
+        .summary-breakdown { background: #0d1117; border-radius: 8px; border: 1px solid #30363d; overflow: hidden; }
+        .breakdown-table { width: 100%; border-collapse: collapse; }
+        .breakdown-table thead { background: #161b22; }
+        .breakdown-table th { padding: 12px 16px; text-align: left; color: #8b949e; font-size: 0.85em; font-weight: 600; border-bottom: 1px solid #30363d; }
+        .breakdown-table th:first-child { width: 40%; }
+        .breakdown-table th:nth-child(2), .breakdown-table th:nth-child(3) { width: 30%; text-align: right; }
+        .breakdown-table td { padding: 12px 16px; color: #c9d1d9; border-bottom: 1px solid #30363d; }
+        .breakdown-table td:nth-child(2), .breakdown-table td:nth-child(3) { text-align: right; }
+        .breakdown-table tbody tr:last-child td { border-bottom: none; }
+        .breakdown-table tbody tr:hover { background: #161b22; }
+        .breakdown-instrument { color: #58a6ff; font-weight: 600; }
+        .breakdown-value { color: #58a6ff; font-weight: bold; }
+        .no-trades { padding: 20px; text-align: center; color: #8b949e; }
+        .calculator-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
+        .row-header { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        .row-header h3 { color: #58a6ff; font-size: 1.1em; margin: 0; }
+        .broker-toggle-small { display: flex; gap: 0; background: #0d1117; border-radius: 6px; padding: 3px; border: 1px solid #30363d; }
+        .broker-btn-small { padding: 6px 16px; background: transparent; border: none; color: #8b949e; cursor: pointer; font-size: 0.85em; border-radius: 4px; transition: all 0.3s; }
+        .broker-btn-small.active { background: #238636; color: white; }
+        .card { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 15px; }
+        .card h4 { color: #58a6ff; margin-bottom: 15px; font-size: 1em; border-bottom: 1px solid #30363d; padding-bottom: 8px; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 5px; color: #8b949e; font-size: 0.85em; }
+        input, select { width: 100%; padding: 8px; background: #161b22; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; font-size: 0.9em; }
+        input:focus, select:focus { outline: none; border-color: #58a6ff; }
+        .price-input { font-size: 1.3em; font-weight: bold; padding: 12px; }
+        .entry-price { color: #f0ad4e; border-color: #f0ad4e; }
+        .stop-price { color: #f85149; border-color: #f85149; }
+        .limit-price { color: #3fb950; border-color: #3fb950; }
+        .toggle-group { display: flex; gap: 8px; margin-bottom: 12px; }
+        .toggle-btn { flex: 1; padding: 8px; background: #161b22; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; cursor: pointer; text-align: center; transition: all 0.3s; font-size: 0.85em; }
+        .toggle-btn.active { background: #238636; border-color: #238636; color: white; }
+        .toggle-btn.short.active { background: #da3633; border-color: #da3633; }
+        .results-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .result-item { background: #161b22; padding: 10px; border-radius: 6px; border: 1px solid #30363d; }
+        .result-label { color: #8b949e; font-size: 0.75em; margin-bottom: 4px; }
+        .result-sublabel { color: #6e7681; font-size: 0.7em; margin-top: 4px; }
+        .result-value { font-size: 1.2em; font-weight: bold; color: #58a6ff; }
+        .result-value.positive { color: #3fb950; }
+        .result-value.negative { color: #f85149; }
+        @media (max-width: 1200px) { .calculator-row { grid-template-columns: 1fr; } .results-grid { grid-template-columns: 1fr; } .summary-totals { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📊 Position Size Calculator</h1>
-        
+        <h1>Position Size Calculator</h1>
         <div class="global-risk">
             <label>Risk Per Trade ($)</label>
             <input type="number" id="globalRisk" step="1" value="1500">
+            <label style="margin-top:20px">Target % for Break Even</label>
+            <input type="number" id="targetPercent" step="1" min="0" max="100" value="70">
         </div>
-        
         <div class="margin-summary">
-            <div class="summary-header">
-                <h2>Total Margin Required</h2>
-            </div>
+            <div class="summary-header"><h2>Total Margin Required</h2></div>
             <div class="summary-totals">
-                <div class="total-column">
-                    <div class="total-label">Intraday</div>
-                    <div class="total-value" id="summaryTotalID">$0</div>
-                </div>
-                <div class="total-column">
-                    <div class="total-label">Overnight</div>
-                    <div class="total-value" id="summaryTotalON">$0</div>
-                </div>
+                <div class="total-column"><div class="total-label">Intraday</div><div class="total-value" id="summaryTotalID">$0</div></div>
+                <div class="total-column"><div class="total-label">Overnight</div><div class="total-value" id="summaryTotalON">$0</div></div>
             </div>
-            <div class="summary-breakdown" id="summaryBreakdown">
-                <div class="no-trades">No active trades</div>
-            </div>
+            <div class="summary-breakdown" id="summaryBreakdown"><div class="no-trades">No active trades</div></div>
         </div>
-
         <div id="calculators"></div>
     </div>
+<script>
+var instrumentsNinja={MES:{tickSize:0.25,tickValue:1.25,marginID:50,marginON:1166,isFutures:true},ES:{tickSize:0.25,tickValue:12.50,marginID:500,marginON:11660,isFutures:true},MNQ:{tickSize:0.25,tickValue:0.50,marginID:100,marginON:1738,isFutures:true},NQ:{tickSize:0.25,tickValue:5.00,marginID:1000,marginON:17380,isFutures:true},MGC:{tickSize:0.10,tickValue:1.00,marginID:200,marginON:814,isFutures:true},GC:{tickSize:0.10,tickValue:10.00,marginID:2000,marginON:8140,isFutures:true},MCL:{tickSize:0.01,tickValue:1.00,marginID:100,marginON:726,isFutures:true},CL:{tickSize:0.01,tickValue:10.00,marginID:2000,marginON:7260,isFutures:true},SIL:{tickSize:0.005,tickValue:5.00,marginID:440,marginON:4400,isFutures:true},SI:{tickSize:0.005,tickValue:25.00,marginID:2200,marginON:22000,isFutures:true},MBT:{tickSize:5,tickValue:0.50,marginID:200,marginON:2000,isFutures:true},ZC:{tickSize:0.0025,tickValue:12.50,marginID:250,marginON:2475,isFutures:true},ZW:{tickSize:0.0025,tickValue:12.50,marginID:200,marginON:2000,isFutures:true},ZS:{tickSize:0.0025,tickValue:12.50,marginID:250,marginON:2475,isFutures:true},ZT:{tickSize:0.0078125,tickValue:15.625,marginID:500,marginON:1540,isFutures:true},ZN:{tickSize:0.015625,tickValue:15.625,marginID:500,marginON:2475,isFutures:true},ZB:{tickSize:0.03125,tickValue:31.25,marginID:1000,marginON:4620,isFutures:true},AUDUSD:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:2200,isFutures:false},M6A:{tickSize:0.0001,tickValue:1.00,marginID:50,marginON:220,isFutures:true},A6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:2200,isFutures:true},EURUSD:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:2915,isFutures:false},M6E:{tickSize:0.0001,tickValue:1.25,marginID:50,marginON:292,isFutures:true},E6:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:2915,isFutures:true},GBPUSD:{tickSize:0.0001,tickValue:6.25,marginID:500,marginON:3080,isFutures:false},M6B:{tickSize:0.0001,tickValue:0.625,marginID:50,marginON:308,isFutures:true},B6:{tickSize:0.0001,tickValue:6.25,marginID:500,marginON:3080,isFutures:true},USDCAD:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:1518,isFutures:false},MICD:{tickSize:0.0001,tickValue:1.00,marginID:50,marginON:152,isFutures:true},C6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:1518,isFutures:true},USDCHF:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:4950,isFutures:false},S6:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:4950,isFutures:true},USDJPY:{tickSize:0.01,tickValue:12.50,marginID:500,marginON:4092,isFutures:false},J6:{tickSize:0.0000001,tickValue:12.50,marginID:500,marginON:4092,isFutures:true}};
+var instrumentsTOS={MES:{tickSize:0.25,tickValue:1.25,marginID:2465,marginON:2465,isFutures:true},ES:{tickSize:0.25,tickValue:12.50,marginID:24650,marginON:24650,isFutures:true},MNQ:{tickSize:0.25,tickValue:0.50,marginID:3692,marginON:3692,isFutures:true},NQ:{tickSize:0.25,tickValue:5.00,marginID:36918,marginON:36918,isFutures:true},MGC:{tickSize:0.10,tickValue:1.00,marginID:2618,marginON:2618,isFutures:true},GC:{tickSize:0.10,tickValue:10.00,marginID:25650,marginON:25650,isFutures:true},MCL:{tickSize:0.01,tickValue:1.00,marginID:457,marginON:457,isFutures:true},CL:{tickSize:0.01,tickValue:10.00,marginID:4754,marginON:4754,isFutures:true},SIL:{tickSize:0.005,tickValue:5.00,marginID:4400,marginON:4400,isFutures:true},SI:{tickSize:0.005,tickValue:25.00,marginID:22000,marginON:22000,isFutures:true},MBT:{tickSize:5,tickValue:0.50,marginID:2000,marginON:2000,isFutures:true},ZC:{tickSize:0.0025,tickValue:12.50,marginID:2475,marginON:2475,isFutures:true},ZW:{tickSize:0.0025,tickValue:12.50,marginID:2000,marginON:2000,isFutures:true},ZS:{tickSize:0.0025,tickValue:12.50,marginID:2475,marginON:2475,isFutures:true},ZT:{tickSize:0.0078125,tickValue:15.625,marginID:1540,marginON:1540,isFutures:true},ZN:{tickSize:0.015625,tickValue:15.625,marginID:2475,marginON:2475,isFutures:true},ZB:{tickSize:0.03125,tickValue:31.25,marginID:4620,marginON:4620,isFutures:true},AUDUSD:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:500,isFutures:false},M6A:{tickSize:0.0001,tickValue:1.00,marginID:209,marginON:209,isFutures:true},A6:{tickSize:0.0001,tickValue:10.00,marginID:2090,marginON:2090,isFutures:true},EURUSD:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:500,isFutures:false},M6E:{tickSize:0.0001,tickValue:1.25,marginID:297,marginON:297,isFutures:true},E6:{tickSize:0.0001,tickValue:12.50,marginID:2970,marginON:2970,isFutures:true},GBPUSD:{tickSize:0.0001,tickValue:6.25,marginID:500,marginON:500,isFutures:false},M6B:{tickSize:0.0001,tickValue:0.625,marginID:220,marginON:220,isFutures:true},B6:{tickSize:0.0001,tickValue:6.25,marginID:2200,marginON:2200,isFutures:true},USDCAD:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:500,isFutures:false},MICD:{tickSize:0.0001,tickValue:1.00,marginID:110,marginON:110,isFutures:true},C6:{tickSize:0.0001,tickValue:10.00,marginID:1100,marginON:1100,isFutures:true},USDCHF:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:500,isFutures:false},S6:{tickSize:0.0001,tickValue:12.50,marginID:4950,marginON:4950,isFutures:true},USDJPY:{tickSize:0.01,tickValue:12.50,marginID:500,marginON:500,isFutures:false},J6:{tickSize:0.0000001,tickValue:12.50,marginID:3080,marginON:3080,isFutures:true}};
+var calculators=[];
+var instrumentOptions='<option value="MES">MES - Micro E-mini S&P 500</option><option value="ES">ES - E-mini S&P 500</option><option value="MNQ">MNQ - Micro E-mini Nasdaq-100</option><option value="NQ">NQ - E-mini Nasdaq-100</option><option value="MGC">MGC - Micro Gold</option><option value="GC">GC - Gold</option><option value="SIL">SIL - Micro Silver</option><option value="SI">SI - Silver</option><option value="MCL">MCL - Micro Crude Oil</option><option value="CL">CL - Crude Oil</option><option value="MBT">MBT - Micro Bitcoin</option><option value="ZT">ZT - 2-Year Treasury Note</option><option value="ZN">ZN - 10-Year Treasury Note</option><option value="ZB">ZB - 30-Year Treasury Bond</option><option value="ZC">ZC - Corn</option><option value="ZW">ZW - Wheat</option><option value="ZS">ZS - Soybeans</option><option value="AUDUSD">AUD/USD - Forex Pair (10k)</option><option value="M6A">M6A - Micro AUD Futures</option><option value="A6">6A - Australian Dollar Futures</option><option value="EURUSD">EUR/USD - Forex Pair (10k)</option><option value="M6E">M6E - Micro EUR Futures</option><option value="E6">6E - Euro FX Futures</option><option value="GBPUSD">GBP/USD - Forex Pair (10k)</option><option value="M6B">M6B - Micro GBP Futures</option><option value="B6">6B - British Pound Futures</option><option value="USDCAD">USD/CAD - Forex Pair (10k)</option><option value="MICD">MICD - Micro CAD Futures</option><option value="C6">6C - Canadian Dollar Futures</option><option value="USDCHF">USD/CHF - Forex Pair (10k)</option><option value="S6">6S - Swiss Franc Futures</option><option value="USDJPY">USD/JPY - Forex Pair (10k)</option><option value="J6">6J - Japanese Yen Futures</option>';
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
-    <script>
-        var instrumentsNinja = {
-            MES: { tickSize: 0.25, tickValue: 1.25, marginID: 50, marginON: 1626, isFutures: true },
-            MNQ: { tickSize: 0.25, tickValue: 0.50, marginID: 100, marginON: 2447, isFutures: true },
-            MGC: { tickSize: 0.10, tickValue: 1.00, marginID: 200, marginON: 1375, isFutures: true },
-            MCL: { tickSize: 0.01, tickValue: 1.00, marginID: 100, marginON: 603, isFutures: true },
-            AUDUSD: { tickSize: 0.0001, tickValue: 1.00, marginID: 240, marginON: 240, isFutures: false },
-            EURUSD: { tickSize: 0.0001, tickValue: 1.00, marginID: 260, marginON: 260, isFutures: false },
-            GBPUSD: { tickSize: 0.0001, tickValue: 1.00, marginID: 320, marginON: 320, isFutures: false },
-            USDCAD: { tickSize: 0.0001, tickValue: 1.00, marginID: 200, marginON: 200, isFutures: false },
-            USDCHF: { tickSize: 0.0001, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false },
-            USDJPY: { tickSize: 0.01, tickValue: 1.00, marginID: 300, marginON: 300, isFutures: false }
-        };
+function saveState(i){var s={instrument:document.getElementById('instrument'+i).value,direction:calculators[i-1].direction,broker:calculators[i-1].broker,entry:document.getElementById('entryPrice'+i).value,stop:document.getElementById('stopPrice'+i).value,limit:document.getElementById('limitPrice'+i).value};localStorage.setItem('trade'+i,JSON.stringify(s));}
+function loadState(i){var s=localStorage.getItem('trade'+i);if(s){try{return JSON.parse(s);}catch(e){return null;}}return null;}
+function saveGlobalRisk(){localStorage.setItem('globalRisk',document.getElementById('globalRisk').value);localStorage.setItem('targetPercent',document.getElementById('targetPercent').value);}
+function loadGlobalRisk(){var r=localStorage.getItem('globalRisk');if(r)document.getElementById('globalRisk').value=r;var p=localStorage.getItem('targetPercent');if(p)document.getElementById('targetPercent').value=p;}
+document.getElementById('globalRisk').addEventListener('input',function(){saveGlobalRisk();calculators.forEach(function(c){c.calculate();});});
+document.getElementById('targetPercent').addEventListener('input',function(){saveGlobalRisk();calculators.forEach(function(c){c.calculate();});});
 
-        var instrumentsTOS = {
-            MES: { tickSize: 0.25, tickValue: 1.25, marginID: 1166, marginON: 1166, isFutures: true },
-            MNQ: { tickSize: 0.25, tickValue: 0.50, marginID: 1738, marginON: 1738, isFutures: true },
-            MGC: { tickSize: 0.10, tickValue: 1.00, marginID: 814, marginON: 814, isFutures: true },
-            MCL: { tickSize: 0.01, tickValue: 1.00, marginID: 510, marginON: 510, isFutures: true },
-            AUDUSD: { tickSize: 0.0001, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false },
-            EURUSD: { tickSize: 0.0001, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false },
-            GBPUSD: { tickSize: 0.0001, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false },
-            USDCAD: { tickSize: 0.0001, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false },
-            USDCHF: { tickSize: 0.0001, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false },
-            USDJPY: { tickSize: 0.01, tickValue: 1.00, marginID: 500, marginON: 500, isFutures: false }
-        };
+function updateSummary(){var bd={},tID=0,tON=0;for(var x=0;x<calculators.length;x++){var c=calculators[x],ik=document.getElementById('instrument'+c.index).value,ins=(c.broker==='ninja'?instrumentsNinja:instrumentsTOS)[ik],en=parseFloat(document.getElementById('entryPrice'+c.index).value)||0,st=parseFloat(document.getElementById('stopPrice'+c.index).value)||0,li=parseFloat(document.getElementById('limitPrice'+c.index).value)||0,rpt=parseFloat(document.getElementById('globalRisk').value)||0;if(en&&st&&li&&rpt){var pts=(c.direction==='long')?(en-st):(st-en);if(pts>0){var tks=pts/ins.tickSize,rpc=tks*ins.tickValue,con=Math.floor(rpt/rpc);if(con>0){var mID=con*ins.marginID,mON=con*ins.marginON,k=ik+' ('+con+')';bd[k]={id:mID,on:mON};tID+=mID;tON+=mON;}}}}document.getElementById('summaryTotalID').textContent='$'+Math.round(tID).toLocaleString();document.getElementById('summaryTotalON').textContent='$'+Math.round(tON).toLocaleString();var bdDiv=document.getElementById('summaryBreakdown'),ks=Object.keys(bd);if(ks.length===0){bdDiv.innerHTML='<div class="no-trades">No active trades</div>';}else{var h='<table class="breakdown-table"><thead><tr><th>Instrument</th><th>Intraday</th><th>Overnight</th></tr></thead><tbody>';for(var j=0;j<ks.length;j++){h+='<tr><td class="breakdown-instrument">'+ks[j]+'</td><td class="breakdown-value">$'+Math.round(bd[ks[j]].id).toLocaleString()+'</td><td class="breakdown-value">$'+Math.round(bd[ks[j]].on).toLocaleString()+'</td></tr>';}h+='</tbody></table>';bdDiv.innerHTML=h;}}
 
-        var calculators = [];
+function createCalc(i){return{index:i,direction:'long',broker:'ninja',calculate:function(){var ik=document.getElementById('instrument'+i).value,ins=(this.broker==='ninja'?instrumentsNinja:instrumentsTOS)[ik],en=parseFloat(document.getElementById('entryPrice'+i).value)||0,st=parseFloat(document.getElementById('stopPrice'+i).value)||0,li=parseFloat(document.getElementById('limitPrice'+i).value)||0,rpt=parseFloat(document.getElementById('globalRisk').value)||0,tp=parseFloat(document.getElementById('targetPercent').value)||70,ml=ins.isFutures?' /contract':' /10k lot';document.getElementById('marginIDPerContract'+i).textContent='$'+ins.marginID.toLocaleString()+ml;document.getElementById('marginONPerContract'+i).textContent='$'+ins.marginON.toLocaleString()+ml;if(!en||!st||!li||!rpt){this.clearResults();return;}var ptsS,ptsL,tgtP;if(this.direction==='long'){ptsS=en-st;ptsL=li-en;tgtP=en+(ptsL*tp/100);}else{ptsS=st-en;ptsL=en-li;tgtP=en-(ptsL*tp/100);}if(ptsS<=0||ptsL<=0){this.clearResults();return;}var tksS=ptsS/ins.tickSize,tksL=ptsL/ins.tickSize,rpc=tksS*ins.tickValue,rwc=tksL*ins.tickValue,rr=rwc/rpc,con=Math.floor(rpt/rpc),tR=con*rpc,tRw=con*rwc,mID=con*ins.marginID,mON=con*ins.marginON;document.getElementById('points'+i).textContent=ptsS.toFixed(2);document.getElementById('rrRatio'+i).textContent=rr.toFixed(2)+':1';document.getElementById('ticksRisk'+i).textContent=tksS.toFixed(0);document.getElementById('ticksReward'+i).textContent=tksL.toFixed(0);document.getElementById('risk'+i).textContent='-$'+tR.toFixed(0);document.getElementById('reward'+i).textContent='$'+tRw.toFixed(0);document.getElementById('contracts'+i).textContent=con;document.getElementById('targetPct'+i).textContent=tgtP.toFixed(ik.includes('JPY')||ik==='J6'?3:2);document.getElementById('marginID'+i).textContent='$'+Math.round(mID).toLocaleString();document.getElementById('marginON'+i).textContent='$'+Math.round(mON).toLocaleString();updateSummary();},clearResults:function(){['points','rrRatio','ticksRisk','ticksReward','risk','reward','contracts','targetPct','marginID','marginON'].forEach(function(f){document.getElementById(f+i).textContent='-';});updateSummary();}};}
 
-        function saveState(index) {
-            var state = {
-                instrument: document.getElementById('instrument' + index).value,
-                direction: calculators[index - 1].direction,
-                broker: calculators[index - 1].broker,
-                entry: document.getElementById('entryPrice' + index).value,
-                stop: document.getElementById('stopPrice' + index).value,
-                limit: document.getElementById('limitPrice' + index).value
-            };
-            localStorage.setItem('trade' + index, JSON.stringify(state));
-        }
+function buildHTML(i){return'<div class="row-header"><h3>Trade '+i+'</h3><div class="broker-toggle-small"><button class="broker-btn-small active" id="ninjaBtn'+i+'">Ninja</button><button class="broker-btn-small" id="tosBtn'+i+'">TOS</button></div></div><div class="card"><h4>Parameters</h4><div class="input-group"><label>Instrument</label><select id="instrument'+i+'">'+instrumentOptions+'</select></div><div class="input-group"><label>Direction</label><div class="toggle-group"><div class="toggle-btn active" id="longBtn'+i+'">Long</div><div class="toggle-btn short" id="shortBtn'+i+'">Short</div></div></div><div id="priceInputs'+i+'"><div class="input-group"><label>Limit Price (Target)</label><input type="number" class="price-input limit-price" id="limitPrice'+i+'" step="0.01" placeholder="0.00"></div><div class="input-group"><label>Entry Price</label><input type="number" class="price-input entry-price" id="entryPrice'+i+'" step="0.01" placeholder="0.00"></div><div class="input-group"><label>Stop Price</label><input type="number" class="price-input stop-price" id="stopPrice'+i+'" step="0.01" placeholder="0.00"></div></div></div><div class="card"><h4>Calculations</h4><div class="results-grid"><div class="result-item"><div class="result-label">Points</div><div class="result-value" id="points'+i+'">-</div></div><div class="result-item"><div class="result-label">R:R Ratio</div><div class="result-value" id="rrRatio'+i+'">-</div></div><div class="result-item"><div class="result-label">Ticks (Stop)</div><div class="result-value negative" id="ticksRisk'+i+'">-</div></div><div class="result-item"><div class="result-label">Ticks (Limit)</div><div class="result-value positive" id="ticksReward'+i+'">-</div></div><div class="result-item"><div class="result-label">Risk</div><div class="result-value negative" id="risk'+i+'">-</div></div><div class="result-item"><div class="result-label">Reward</div><div class="result-value positive" id="reward'+i+'">-</div></div><div class="result-item"><div class="result-label">Contracts/Lots</div><div class="result-value" id="contracts'+i+'" style="font-size:1.5em">-</div></div><div class="result-item"><div class="result-label">Target % Price</div><div class="result-value" id="targetPct'+i+'">-</div></div><div class="result-item"><div class="result-label">Margin (Intraday)</div><div class="result-value" id="marginID'+i+'">-</div><div class="result-sublabel" id="marginIDPerContract'+i+'">-</div></div><div class="result-item"><div class="result-label">Margin (Overnight)</div><div class="result-value" id="marginON'+i+'">-</div><div class="result-sublabel" id="marginONPerContract'+i+'">-</div></div></div></div>';}
 
-        function loadState(index) {
-            var saved = localStorage.getItem('trade' + index);
-            if (saved) {
-                try {
-                    return JSON.parse(saved);
-                } catch (e) {
-                    return null;
-                }
-            }
-            return null;
-        }
+function reorderPrices(i,dir){var c=document.getElementById('priceInputs'+i),lim=c.querySelector('#limitPrice'+i).parentElement,ent=c.querySelector('#entryPrice'+i).parentElement,stp=c.querySelector('#stopPrice'+i).parentElement;c.innerHTML='';if(dir==='long'){c.appendChild(lim);c.appendChild(ent);c.appendChild(stp);}else{c.appendChild(stp);c.appendChild(ent);c.appendChild(lim);}}
 
-        function saveGlobalRisk() {
-            var risk = document.getElementById('globalRisk').value;
-            localStorage.setItem('globalRisk', risk);
-        }
-
-        function loadGlobalRisk() {
-            var saved = localStorage.getItem('globalRisk');
-            if (saved) {
-                document.getElementById('globalRisk').value = saved;
-            }
-        }
-
-        document.getElementById('globalRisk').addEventListener('input', function() {
-            saveGlobalRisk();
-            calculators.forEach(function(calc) {
-                calc.calculate();
-            });
-        });
-
-        function updateSummary() {
-            var breakdown = {};
-            var totalID = 0;
-            var totalON = 0;
-
-            for (var idx = 0; idx < calculators.length; idx++) {
-                var calc = calculators[idx];
-                var instrumentKey = document.getElementById('instrument' + calc.index).value;
-                var instruments = calc.broker === 'ninja' ? instrumentsNinja : instrumentsTOS;
-                var instrument = instruments[instrumentKey];
-                var entry = parseFloat(document.getElementById('entryPrice' + calc.index).value) || 0;
-                var stop = parseFloat(document.getElementById('stopPrice' + calc.index).value) || 0;
-                var limit = parseFloat(document.getElementById('limitPrice' + calc.index).value) || 0;
-                var riskPerTrade = parseFloat(document.getElementById('globalRisk').value) || 0;
-
-                if (entry && stop && limit && riskPerTrade) {
-                    var pointsToStop;
-                    if (calc.direction === 'long') {
-                        pointsToStop = entry - stop;
-                    } else {
-                        pointsToStop = stop - entry;
-                    }
-
-                    if (pointsToStop > 0) {
-                        var ticksToStop = pointsToStop / instrument.tickSize;
-                        var riskPerContract = ticksToStop * instrument.tickValue;
-                        var contracts = Math.floor(riskPerTrade / riskPerContract);
-                        
-                        if (contracts > 0) {
-                            var marginID = contracts * instrument.marginID;
-                            var marginON = contracts * instrument.marginON;
-                            
-                            var key = instrumentKey + ' (' + contracts + ')';
-                            breakdown[key] = { id: marginID, on: marginON };
-                            totalID += marginID;
-                            totalON += marginON;
-                        }
-                    }
-                }
-            }
-
-            document.getElementById('summaryTotalID').textContent = '$' + totalID.toLocaleString();
-            document.getElementById('summaryTotalON').textContent = '$' + totalON.toLocaleString();
-
-            var breakdownDiv = document.getElementById('summaryBreakdown');
-            var keys = Object.keys(breakdown);
-            if (keys.length === 0) {
-                breakdownDiv.innerHTML = '<div class="no-trades">No active trades</div>';
-            } else {
-                var html = '<table class="breakdown-table"><thead><tr><th>Instrument</th><th>Intraday</th><th>Overnight</th></tr></thead><tbody>';
-                for (var i = 0; i < keys.length; i++) {
-                    var key = keys[i];
-                    html += '<tr><td class="breakdown-instrument">' + key + '</td><td class="breakdown-value">$' + breakdown[key].id.toLocaleString() + '</td><td class="breakdown-value">$' + breakdown[key].on.toLocaleString() + '</td></tr>';
-                }
-                html += '</tbody></table>';
-                breakdownDiv.innerHTML = html;
-            }
-        }
-
-        function createCalculator(index) {
-            return {
-                index: index,
-                direction: 'long',
-                broker: 'ninja',
-                
-                calculate: function() {
-                    var instrumentKey = document.getElementById('instrument' + index).value;
-                    var instruments = this.broker === 'ninja' ? instrumentsNinja : instrumentsTOS;
-                    var instrument = instruments[instrumentKey];
-                    var entry = parseFloat(document.getElementById('entryPrice' + index).value) || 0;
-                    var stop = parseFloat(document.getElementById('stopPrice' + index).value) || 0;
-                    var limit = parseFloat(document.getElementById('limitPrice' + index).value) || 0;
-                    var riskPerTrade = parseFloat(document.getElementById('globalRisk').value) || 0;
-
-                    var marginLabel = instrument.isFutures ? ' per contract' : ' per 10k lot';
-                    document.getElementById('marginIDPerContract' + index).textContent = '$' + instrument.marginID.toLocaleString() + marginLabel;
-                    document.getElementById('marginONPerContract' + index).textContent = '$' + instrument.marginON.toLocaleString() + marginLabel;
-
-                    if (!entry || !stop || !limit || !riskPerTrade) {
-                        this.clearResults();
-                        return;
-                    }
-
-                    var pointsToStop, pointsToLimit;
-                    if (this.direction === 'long') {
-                        pointsToStop = entry - stop;
-                        pointsToLimit = limit - entry;
-                    } else {
-                        pointsToStop = stop - entry;
-                        pointsToLimit = entry - limit;
-                    }
-
-                    if (pointsToStop <= 0 || pointsToLimit <= 0) {
-                        this.clearResults();
-                        return;
-                    }
-
-                    var ticksToStop = pointsToStop / instrument.tickSize;
-                    var ticksToLimit = pointsToLimit / instrument.tickSize;
-                    var rrUnit = instrument.tickValue;
-                    var riskPerContract = ticksToStop * rrUnit;
-                    var rewardPerContract = ticksToLimit * rrUnit;
-                    var rrRatio = rewardPerContract / riskPerContract;
-                    var contracts = Math.floor(riskPerTrade / riskPerContract);
-                    var totalRisk = contracts * riskPerContract;
-                    var totalReward = contracts * rewardPerContract;
-                    var marginID = contracts * instrument.marginID;
-                    var marginON = contracts * instrument.marginON;
-
-                    document.getElementById('points' + index).textContent = pointsToStop.toFixed(2);
-                    document.getElementById('rrRatio' + index).textContent = rrRatio.toFixed(2) + ':1';
-                    document.getElementById('ticksRisk' + index).textContent = ticksToStop.toFixed(0);
-                    document.getElementById('ticksReward' + index).textContent = ticksToLimit.toFixed(0);
-                    document.getElementById('risk' + index).textContent = '-$' + totalRisk.toFixed(0);
-                    document.getElementById('reward' + index).textContent = '$' + totalReward.toFixed(0);
-                    document.getElementById('contracts' + index).textContent = contracts;
-                    document.getElementById('rrUnit' + index).textContent = '$' + rrUnit.toFixed(2);
-                    document.getElementById('marginID' + index).textContent = '$' + marginID.toLocaleString();
-                    document.getElementById('marginON' + index).textContent = '$' + marginON.toLocaleString();
-                    
-                    updateSummary();
-                },
-
-                clearResults: function() {
-                    document.getElementById('points' + index).textContent = '-';
-                    document.getElementById('rrRatio' + index).textContent = '-';
-                    document.getElementById('ticksRisk' + index).textContent = '-';
-                    document.getElementById('ticksReward' + index).textContent = '-';
-                    document.getElementById('risk' + index).textContent = '-';
-                    document.getElementById('reward' + index).textContent = '-';
-                    document.getElementById('contracts' + index).textContent = '-';
-                    document.getElementById('rrUnit' + index).textContent = '-';
-                    document.getElementById('marginID' + index).textContent = '-';
-                    document.getElementById('marginON' + index).textContent = '-';
-                    
-                    updateSummary();
-                }
-            };
-        }
-
-        function buildTradeHTML(i) {
-            var parts = [];
-            parts.push('<div class="row-header"><h3>Trade ' + i + '</h3>');
-            parts.push('<div class="broker-toggle-small">');
-            parts.push('<button class="broker-btn-small active" id="ninjaBtn' + i + '">Ninja</button>');
-            parts.push('<button class="broker-btn-small" id="tosBtn' + i + '">TOS</button>');
-            parts.push('</div></div>');
-            parts.push('<div class="card"><h4>Parameters</h4>');
-            parts.push('<div class="input-group"><label>Instrument</label><select id="instrument' + i + '">');
-            parts.push('<option value="MES">MES - Micro E-mini S&P 500</option>');
-            parts.push('<option value="MNQ">MNQ - Micro E-mini Nasdaq-100</option>');
-            parts.push('<option value="MGC">MGC - Micro Gold</option>');
-            parts.push('<option value="MCL">MCL - Micro Crude Oil</option>');
-            parts.push('<option value="AUDUSD">AUDUSD - Australian Dollar</option>');
-            parts.push('<option value="EURUSD">EURUSD - Euro</option>');
-            parts.push('<option value="GBPUSD">GBPUSD - British Pound</option>');
-            parts.push('<option value="USDCAD">USDCAD - US Dollar/Canadian Dollar</option>');
-            parts.push('<option value="USDCHF">USDCHF - US Dollar/Swiss Franc</option>');
-            parts.push('<option value="USDJPY">USDJPY - US Dollar/Japanese Yen</option>');
-            parts.push('</select></div>');
-            parts.push('<div class="input-group"><label>Direction</label><div class="toggle-group">');
-            parts.push('<div class="toggle-btn active" id="longBtn' + i + '">Long</div>');
-            parts.push('<div class="toggle-btn short" id="shortBtn' + i + '">Short</div>');
-            parts.push('</div></div>');
-            parts.push('<div id="priceInputs' + i + '">');
-            parts.push('<div class="input-group"><label>Limit Price (Target)</label>');
-            parts.push('<input type="number" class="price-input" id="limitPrice' + i + '" step="0.01" placeholder="0.00"></div>');
-            parts.push('<div class="input-group"><label>Entry Price</label>');
-            parts.push('<input type="number" class="price-input" id="entryPrice' + i + '" step="0.01" placeholder="0.00"></div>');
-            parts.push('<div class="input-group"><label>Stop Price</label>');
-            parts.push('<input type="number" class="price-input" id="stopPrice' + i + '" step="0.01" placeholder="0.00"></div>');
-            parts.push('</div>');
-            parts.push('</div><div class="card"><h4>Calculations</h4><div class="results-grid">');
-            parts.push('<div class="result-item"><div class="result-label">Points</div><div class="result-value" id="points' + i + '">-</div></div>');
-            parts.push('<div class="result-item"><div class="result-label">R:R Ratio</div><div class="result-value" id="rrRatio' + i + '">-</div></div>');
-            parts.push('<div class="result-item"><div class="result-label">Ticks (Stop)</div><div class="result-value negative" id="ticksRisk' + i + '">-</div></div>');
-            parts.push('<div class="result-item"><div class="result-label">Ticks (Limit)</div><div class="result-value positive" id="ticksReward' + i + '">-</div></div>');
-            parts.push('<div class="result-item"><div class="result-label">Risk</div><div class="result-value negative" id="risk' + i + '">-</div></div>');
-            parts.push('<div class="result-item"><div class="result-label">Reward</div><div class="result-value positive" id="reward' + i + '">-</div></div>');
-            parts.push('<div class="result-item"><div class="result-label">Contracts/Lots</div><div class="result-value" id="contracts' + i + '" style="font-size: 1.5em;">-</div></div>');
-            parts.push('<div class="result-item"><div class="result-label">R:R Unit</div><div class="result-value" id="rrUnit' + i + '">-</div></div>');
-            parts.push('<div class="result-item"><div class="result-label">Margin (Intraday)</div><div class="result-value" id="marginID' + i + '">-</div>');
-            parts.push('<div class="result-sublabel" id="marginIDPerContract' + i + '">-</div></div>');
-            parts.push('<div class="result-item"><div class="result-label">Margin (Overnight)</div><div class="result-value" id="marginON' + i + '">-</div>');
-            parts.push('<div class="result-sublabel" id="marginONPerContract' + i + '">-</div></div>');
-            parts.push('</div></div>');
-            return parts.join('');
-        }
-
-        function reorderPriceInputs(index, direction) {
-            var container = document.getElementById('priceInputs' + index);
-            var limitDiv = container.querySelector('#limitPrice' + index).parentElement;
-            var entryDiv = container.querySelector('#entryPrice' + index).parentElement;
-            var stopDiv = container.querySelector('#stopPrice' + index).parentElement;
-            
-            container.innerHTML = '';
-            
-            if (direction === 'long') {
-                container.appendChild(limitDiv);
-                container.appendChild(entryDiv);
-                container.appendChild(stopDiv);
-            } else {
-                container.appendChild(stopDiv);
-                container.appendChild(entryDiv);
-                container.appendChild(limitDiv);
-            }
-        }
-
-        function renderCalculators() {
-            var container = document.getElementById('calculators');
-            
-            for (var i = 1; i <= 5; i++) {
-                var calc = createCalculator(i);
-                calculators.push(calc);
-
-                var row = document.createElement('div');
-                row.className = 'calculator-row';
-                row.innerHTML = buildTradeHTML(i);
-                container.appendChild(row);
-
-                (function(calc, i) {
-                    var state = loadState(i);
-                    
-                    if (state) {
-                        document.getElementById('instrument' + i).value = state.instrument;
-                        calc.direction = state.direction;
-                        calc.broker = state.broker;
-                        document.getElementById('entryPrice' + i).value = state.entry;
-                        document.getElementById('stopPrice' + i).value = state.stop;
-                        document.getElementById('limitPrice' + i).value = state.limit;
-                        
-                        if (state.direction === 'short') {
-                            document.getElementById('shortBtn' + i).classList.add('active');
-                            document.getElementById('longBtn' + i).classList.remove('active');
-                            reorderPriceInputs(i, 'short');
-                        }
-                        
-                        if (state.broker === 'tos') {
-                            document.getElementById('tosBtn' + i).classList.add('active');
-                            document.getElementById('ninjaBtn' + i).classList.remove('active');
-                        }
-                    }
-                    
-                    document.getElementById('ninjaBtn' + i).addEventListener('click', function() {
-                        calc.broker = 'ninja';
-                        this.classList.add('active');
-                        document.getElementById('tosBtn' + i).classList.remove('active');
-                        saveState(i);
-                        calc.calculate();
-                    });
-
-                    document.getElementById('tosBtn' + i).addEventListener('click', function() {
-                        calc.broker = 'tos';
-                        this.classList.add('active');
-                        document.getElementById('ninjaBtn' + i).classList.remove('active');
-                        saveState(i);
-                        calc.calculate();
-                    });
-
-                    document.getElementById('longBtn' + i).addEventListener('click', function() {
-                        calc.direction = 'long';
-                        this.classList.add('active');
-                        document.getElementById('shortBtn' + i).classList.remove('active');
-                        reorderPriceInputs(i, 'long');
-                        saveState(i);
-                        calc.calculate();
-                    });
-
-                    document.getElementById('shortBtn' + i).addEventListener('click', function() {
-                        calc.direction = 'short';
-                        this.classList.add('active');
-                        document.getElementById('longBtn' + i).classList.remove('active');
-                        reorderPriceInputs(i, 'short');
-                        saveState(i);
-                        calc.calculate();
-                    });
-
-                    document.getElementById('instrument' + i).addEventListener('change', function() {
-                        document.getElementById('entryPrice' + i).value = '';
-                        document.getElementById('stopPrice' + i).value = '';
-                        document.getElementById('limitPrice' + i).value = '';
-                        saveState(i);
-                        calc.calculate();
-                    });
-
-                    document.getElementById('entryPrice' + i).addEventListener('input', function() { 
-                        saveState(i);
-                        calc.calculate(); 
-                    });
-                    document.getElementById('stopPrice' + i).addEventListener('input', function() { 
-                        saveState(i);
-                        calc.calculate(); 
-                    });
-                    document.getElementById('limitPrice' + i).addEventListener('input', function() { 
-                        saveState(i);
-                        calc.calculate(); 
-                    });
-                })(calc, i);
-
-                calc.calculate();
-            }
-        }
-
-        loadGlobalRisk();
-        renderCalculators();
-    </script>
+function renderCalcs(){var cont=document.getElementById('calculators');for(var i=1;i<=10;i++){var calc=createCalc(i);calculators.push(calc);var row=document.createElement('div');row.className='calculator-row';row.innerHTML=buildHTML(i);cont.appendChild(row);(function(calc,i){var st=loadState(i);if(st){document.getElementById('instrument'+i).value=st.instrument;calc.direction=st.direction;calc.broker=st.broker;document.getElementById('entryPrice'+i).value=st.entry;document.getElementById('stopPrice'+i).value=st.stop;document.getElementById('limitPrice'+i).value=st.limit;if(st.direction==='short'){document.getElementById('shortBtn'+i).classList.add('active');document.getElementById('longBtn'+i).classList.remove('active');reorderPrices(i,'short');}if(st.broker==='tos'){document.getElementById('tosBtn'+i).classList.add('active');document.getElementById('ninjaBtn'+i).classList.remove('active');}}document.getElementById('ninjaBtn'+i).addEventListener('click',function(){calc.broker='ninja';this.classList.add('active');document.getElementById('tosBtn'+i).classList.remove('active');saveState(i);calc.calculate();});document.getElementById('tosBtn'+i).addEventListener('click',function(){calc.broker='tos';this.classList.add('active');document.getElementById('ninjaBtn'+i).classList.remove('active');saveState(i);calc.calculate();});document.getElementById('longBtn'+i).addEventListener('click',function(){calc.direction='long';this.classList.add('active');document.getElementById('shortBtn'+i).classList.remove('active');reorderPrices(i,'long');saveState(i);calc.calculate();});document.getElementById('shortBtn'+i).addEventListener('click',function(){calc.direction='short';this.classList.add('active');document.getElementById('longBtn'+i).classList.remove('active');reorderPrices(i,'short');saveState(i);calc.calculate();});document.getElementById('instrument'+i).addEventListener('change',function(){document.getElementById('entryPrice'+i).value='';document.getElementById('stopPrice'+i).value='';document.getElementById('limitPrice'+i).value='';saveState(i);calc.calculate();});document.getElementById('entryPrice'+i).addEventListener('input',function(){saveState(i);calc.calculate();});document.getElementById('stopPrice'+i).addEventListener('input',function(){saveState(i);calc.calculate();});document.getElementById('limitPrice'+i).addEventListener('input',function(){saveState(i);calc.calculate();});})(calc,i);calc.calculate();}}
+loadGlobalRisk();renderCalcs();
+</script>
 </body>
 </html>
