@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Trading Strategy Simulator v5</title>
+<title>Trading Strategy Simulator v6</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body{margin:0;font-family:Inter,system-ui,sans-serif;background:#0d1117;color:#e6edf3}
@@ -22,6 +22,8 @@ header button:hover{filter:brightness(1.15)}
 .card.rules{border:1px solid #58a6ff44}
 .card.realism{border:1px solid #f085494d}
 .card.realism h3{color:#f85149}
+.card.costs{border:1px solid #c9d1d955}
+.card.costs h3{color:#c9d1d9}
 label{font-size:12px;opacity:.85;display:block;margin-top:6px}
 input,select{width:100%;margin-top:3px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:5px;padding:5px 7px;font-family:inherit;font-size:13px;box-sizing:border-box}
 input[type=checkbox]{width:auto;margin:0 6px 0 0}
@@ -57,13 +59,14 @@ hr{border:none;border-top:1px solid #30363d;margin:8px 0}
 .live-block .row .val{font-family:'JetBrains Mono',Consolas,monospace}
 .live-block .footnote{margin-top:8px;font-size:11px;opacity:.7;font-style:italic;border-left:2px solid #f0883e;padding-left:8px}
 .realism-note{margin-top:6px;padding:6px;background:#0d1117;border-radius:4px;font-size:11px;color:#f85149bb;border-left:2px solid #f85149}
+.cost-input-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 </style>
 </head>
 <body>
 <header>
   <div>
     <h1>Trading Strategy Simulator</h1>
-    <span class="v">v5 — Sandbox Build</span>
+    <span class="v">v6 — Sandbox Build (with commission/spread costs)</span>
   </div>
   <div>
     <button class="secondary" id="saveBtn">Save Inputs</button>
@@ -108,7 +111,18 @@ hr{border:none;border-top:1px solid #30363d;margin:8px 0}
     <label>Bad Regime Probability (% per month)</label><input id="regimeProb" value="12" />
     <label>Trade Count Reduction (%)</label><input id="regimeTradeCut" value="40" />
     <label>Win Rate Reduction (percentage points)</label><input id="regimeWRCut" value="8" />
-    <div class="realism-note">Default ON. Makes the model more honest. Turn off to see "academic" view (results will look better but less realistic).</div>
+    <div class="realism-note">Default ON. Makes the model more honest.</div>
+  </div>
+
+  <div class="card costs">
+    <h3>Trading Costs (per trade)</h3>
+    <small>Subtracted from each trade's P&amp;L (commissions for futures, spread for FX). Each strategy has its own cost field below.</small>
+    <label><input type="checkbox" id="costsOn" checked /> Apply costs to each trade</label>
+    <div class="realism-note" style="border-left-color:#c9d1d9;color:#c9d1d9bb">
+      Defaults: Standard $30 (mostly futures with some FX), A+ $40 (larger size), B/C $20 each.
+      Adjust per strategy to match your real round-trip costs. For futures: ~$2–$5/contract round-trip × contract count.
+      For FX spot: spread × pip value × lot count.
+    </div>
   </div>
 
   <div class="card">
@@ -136,6 +150,7 @@ hr{border:none;border-top:1px solid #30363d;margin:8px 0}
     <label>R:R</label><input id="rr" value="1.3" />
     <label>Trades / Month</label><input id="trades" value="20" />
     <label>Trades Variability ±</label><input id="varA" value="7" />
+    <label>Cost / Trade ($)</label><input id="cost" value="30" />
   </div>
 
   <div class="card aplus">
@@ -146,6 +161,7 @@ hr{border:none;border-top:1px solid #30363d;margin:8px 0}
     <label>R:R</label><input id="rrA" value="2" />
     <label>Avg Trades / Month</label><input id="tradesA" value="1.5" />
     <label>Max A+ / Month</label><input id="maxA" type="number" value="3" />
+    <label>Cost / Trade ($)</label><input id="costA" value="40" />
   </div>
 
   <div class="card">
@@ -156,6 +172,7 @@ hr{border:none;border-top:1px solid #30363d;margin:8px 0}
     <label>R:R</label><input id="rr2" value="2" />
     <label>Trades / Month</label><input id="trades2" value="10" />
     <label>Trades Variability ±</label><input id="varB" value="3" />
+    <label>Cost / Trade ($)</label><input id="cost2" value="20" />
   </div>
 
   <div class="card">
@@ -166,6 +183,7 @@ hr{border:none;border-top:1px solid #30363d;margin:8px 0}
     <label>R:R</label><input id="rr3" value="1.5" />
     <label>Trades / Month</label><input id="trades3" value="8" />
     <label>Trades Variability ±</label><input id="varC" value="3" />
+    <label>Cost / Trade ($)</label><input id="cost3" value="20" />
   </div>
 
   <div class="summary" id="summary">Click "Run Simulation" to begin.</div>
@@ -251,22 +269,32 @@ const yearLinesPlugin = {
 };
 
 function calcLiveExpectancy() {
+  const costsOn = vChk('costsOn');
+  const start = vc('start');
   const strats = [
-    {label:'A (Standard)', en:vChk('en'), risk:vn('risk')/100, win:vn('win')/100, rr:vn('rr'), trades:vn('trades')},
-    {label:'B', en:vChk('en2'), risk:vn('risk2')/100, win:vn('win2')/100, rr:vn('rr2'), trades:vn('trades2')},
-    {label:'C', en:vChk('en3'), risk:vn('risk3')/100, win:vn('win3')/100, rr:vn('rr3'), trades:vn('trades3')}
+    {label:'A (Standard)', en:vChk('en'), risk:vn('risk')/100, win:vn('win')/100, rr:vn('rr'), trades:vn('trades'), cost:costsOn?vn('cost'):0},
+    {label:'B', en:vChk('en2'), risk:vn('risk2')/100, win:vn('win2')/100, rr:vn('rr2'), trades:vn('trades2'), cost:costsOn?vn('cost2'):0},
+    {label:'C', en:vChk('en3'), risk:vn('risk3')/100, win:vn('win3')/100, rr:vn('rr3'), trades:vn('trades3'), cost:costsOn?vn('cost3'):0}
   ];
-  const aPlus = {label:'A+', en:vChk('enA'), risk:vn('riskA')/100, win:vn('winA')/100, rr:vn('rrA'), trades:vn('tradesA')};
+  const aPlus = {label:'A+', en:vChk('enA'), risk:vn('riskA')/100, win:vn('winA')/100, rr:vn('rrA'), trades:vn('tradesA'), cost:costsOn?vn('costA'):0};
   let html = '<div class="h">Per-Strategy Math</div>';
-  let monthlyMult = 1, anyEnabled = false;
+  let monthlyMultPre = 1, monthlyMultPost = 1, anyEnabled = false;
+  let monthlyCost = 0;
   [...strats, aPlus].forEach(s => {
     if (!s.en) return;
     anyEnabled = true;
-    const evPct = s.risk * (s.win * s.rr - (1 - s.win));
-    const monthlyMultS = Math.pow(1 + evPct, s.trades);
-    monthlyMult *= monthlyMultS;
-    const c = evPct >= 0 ? '#3fb950' : '#f85149';
-    html += `<div class="row"><span class="lbl">${s.label} (${s.trades} trades × <span style="color:${c}">${(evPct*100).toFixed(2)}%</span>/trade)</span><span class="val" style="color:${c}">${((monthlyMultS-1)*100).toFixed(2)}%/mo</span></div>`;
+    const evPctPre = s.risk * (s.win * s.rr - (1 - s.win));
+    // Cost as % of starting balance (for display)
+    const costPct = start > 0 ? (s.cost / start) : 0;
+    const evPctPost = evPctPre - costPct;
+    const monthlyMultS_pre = Math.pow(1 + evPctPre, s.trades);
+    const monthlyMultS_post = Math.pow(1 + evPctPost, s.trades);
+    monthlyMultPre *= monthlyMultS_pre;
+    monthlyMultPost *= monthlyMultS_post;
+    monthlyCost += s.cost * s.trades;
+    const c = evPctPost >= 0 ? '#3fb950' : '#f85149';
+    const costStr = costsOn && s.cost > 0 ? ` <span style="opacity:.6">(−$${s.cost}/trade)</span>` : '';
+    html += `<div class="row"><span class="lbl">${s.label} (${s.trades} trades × <span style="color:${c}">${(evPctPost*100).toFixed(2)}%</span>/trade${costStr})</span><span class="val" style="color:${c}">${((monthlyMultS_post-1)*100).toFixed(2)}%/mo</span></div>`;
   });
   if (!anyEnabled) {
     document.getElementById('liveExp').innerHTML = '<small>No strategies enabled.</small>';
@@ -274,20 +302,27 @@ function calcLiveExpectancy() {
   }
   const tax = vn('tax')/100;
   const months = vn('months');
-  const periodMult = Math.pow(monthlyMult, months);
-  const yearly = Math.pow(monthlyMult, 12);
-  const afterTaxPeriod = 1 + (periodMult - 1) * (1 - tax);
-  const start = vc('start');
+  const periodMultPre = Math.pow(monthlyMultPre, months);
+  const periodMultPost = Math.pow(monthlyMultPost, months);
+  const yearlyPost = Math.pow(monthlyMultPost, 12);
+  const afterTaxPeriod = 1 + (periodMultPost - 1) * (1 - tax);
   const target = vc('target');
   const ok = start * afterTaxPeriod >= target;
+  const totalCostsEst = monthlyCost * months;
+  const costDragPct = periodMultPre > 1 ? ((periodMultPre - periodMultPost) / (periodMultPre - 1) * 100) : 0;
+
   html += `<hr>`;
   html += `<div class="h">If Math Plays Out Perfectly</div>`;
-  html += `<div class="row"><span class="lbl">Combined growth</span><span class="val">+${((monthlyMult-1)*100).toFixed(2)}% per month</span></div>`;
-  html += `<div class="row"><span class="lbl">Annualized</span><span class="val">${yearly.toFixed(2)}× per year</span></div>`;
-  html += `<div class="row"><span class="lbl">Over ${months} months (pre-tax)</span><span class="val">${periodMult.toFixed(2)}× → ${fmtBig(start * periodMult)}</span></div>`;
+  html += `<div class="row"><span class="lbl">Combined growth (after costs)</span><span class="val">+${((monthlyMultPost-1)*100).toFixed(2)}% per month</span></div>`;
+  html += `<div class="row"><span class="lbl">Annualized (after costs)</span><span class="val">${yearlyPost.toFixed(2)}× per year</span></div>`;
+  html += `<div class="row"><span class="lbl">Over ${months} months (pre-tax, post-cost)</span><span class="val">${periodMultPost.toFixed(2)}× → ${fmtBig(start * periodMultPost)}</span></div>`;
   html += `<div class="row"><span class="lbl">After ${(tax*100).toFixed(0)}% tax</span><span class="val" style="color:${ok?'#3fb950':'#f85149'}">${fmtBig(start * afterTaxPeriod)}</span></div>`;
+  if (costsOn) {
+    html += `<div class="row"><span class="lbl">Est. total trading costs (${months}mo)</span><span class="val" style="color:#f0883e">${fmtBig(totalCostsEst)}</span></div>`;
+    html += `<div class="row"><span class="lbl">Cost drag on theoretical gains</span><span class="val" style="color:#f0883e">${costDragPct.toFixed(1)}%</span></div>`;
+  }
   html += `<div class="row"><span class="lbl">vs target ${fmtBig(target)}</span><span class="val" style="color:${ok?'#3fb950':'#f85149'}">${ok ? 'EV exceeds target' : 'EV below target'}</span></div>`;
-  html += `<div class="footnote">Theoretical "perfect execution" path with no variance, no drawdowns, no risk caps, no bad regimes. Real Monte Carlo will be much lower. Sanity-check only.</div>`;
+  html += `<div class="footnote">Theoretical "perfect execution" path with no variance, drawdowns, or risk caps. Costs are pulled per-trade. Real Monte Carlo will be lower than this.</div>`;
   document.getElementById('liveExp').innerHTML = html;
 }
 
@@ -313,13 +348,14 @@ function runSimulation() {
   const regimeProb = vn('regimeProb') / 100;
   const regimeTradeCut = vn('regimeTradeCut') / 100;
   const regimeWRCut = vn('regimeWRCut') / 100;
+  const costsOn = vChk('costsOn');
 
   const strats = [
-    {idx:0, en:vChk('en'), risk:vn('risk')/100, win:vn('win')/100, rr:vn('rr'), trades:vn('trades'), variance:vn('varA')},
-    {idx:1, en:vChk('en2'), risk:vn('risk2')/100, win:vn('win2')/100, rr:vn('rr2'), trades:vn('trades2'), variance:vn('varB')},
-    {idx:2, en:vChk('en3'), risk:vn('risk3')/100, win:vn('win3')/100, rr:vn('rr3'), trades:vn('trades3'), variance:vn('varC')}
+    {idx:0, en:vChk('en'), risk:vn('risk')/100, win:vn('win')/100, rr:vn('rr'), trades:vn('trades'), variance:vn('varA'), cost:costsOn?vn('cost'):0},
+    {idx:1, en:vChk('en2'), risk:vn('risk2')/100, win:vn('win2')/100, rr:vn('rr2'), trades:vn('trades2'), variance:vn('varB'), cost:costsOn?vn('cost2'):0},
+    {idx:2, en:vChk('en3'), risk:vn('risk3')/100, win:vn('win3')/100, rr:vn('rr3'), trades:vn('trades3'), variance:vn('varC'), cost:costsOn?vn('cost3'):0}
   ];
-  const aPlus = {en:vChk('enA'), risk:vn('riskA')/100, win:vn('winA')/100, rr:vn('rrA'), trades:vn('tradesA'), maxTrades:vn('maxA')};
+  const aPlus = {en:vChk('enA'), risk:vn('riskA')/100, win:vn('winA')/100, rr:vn('rrA'), trades:vn('tradesA'), maxTrades:vn('maxA'), cost:costsOn?vn('costA'):0};
 
   const allEquity = [];
   const allMaxDDPct = [];
@@ -331,6 +367,7 @@ function runSimulation() {
   const allRegimeMonthsCount = [];
   const allRunWorstMonthDollar = [];
   const allRunWorstMonthPct = [];
+  const allRunCosts = []; // total $ in costs paid per run
   let blowups = 0, aboveTarget = 0;
   let totalMonthsBelow55WR = 0, totalMonthsRecorded = 0;
 
@@ -350,6 +387,7 @@ function runSimulation() {
     let peak = startVal;
     let maxDDPct = 0;
     let YTDpnl = 0;
+    let runCosts = 0;
     const path = [];
     let losingMonthsThisRun = 0;
     let regimeMonthsThisRun = 0;
@@ -445,6 +483,7 @@ function runSimulation() {
               isWin = rng() < effWR;
             }
 
+            // Apply trade P&L
             if (isWin) {
               const pnl = riskAmt * s.rr;
               bal += pnl; YTDpnl += pnl;
@@ -454,6 +493,14 @@ function runSimulation() {
               bal -= riskAmt; YTDpnl -= riskAmt;
               dayR -= 1; weekR -= 1;
             }
+
+            // Apply trade cost (commission/spread) — independent of win/loss
+            if (s.cost > 0) {
+              bal -= s.cost;
+              YTDpnl -= s.cost;
+              runCosts += s.cost;
+            }
+
             monthTrades++;
 
             if (bal > peak) peak = bal;
@@ -469,7 +516,6 @@ function runSimulation() {
         }
       }
 
-      // Capture pure-trading P&L for this month BEFORE tax/withdrawal
       const postTradeBal = bal;
       const monthPnLDollar = postTradeBal - monthStartBal;
       const monthPnLPct = monthStartBal > 0 ? monthPnLDollar / monthStartBal : 0;
@@ -489,13 +535,11 @@ function runSimulation() {
         }
       }
 
-      // Tax
       if (m % 12 === 0 || m === simulationMonths) {
         if (YTDpnl > 0) bal -= YTDpnl * taxR;
         YTDpnl = 0;
       }
 
-      // Withdrawals
       const wd = (m > noWithdrawMonths) ? (w[Math.min(yearIdx, 4)] || 0) : 0;
       bal -= wd;
       if (bal < 0) bal = 0;
@@ -510,6 +554,7 @@ function runSimulation() {
     allRegimeMonthsCount.push(regimeMonthsThisRun);
     allRunWorstMonthDollar.push(runWorstMonthDollar);
     allRunWorstMonthPct.push(runWorstMonthPct);
+    allRunCosts.push(runCosts);
     if (bal <= 0) blowups++;
     if (bal >= targetN) aboveTarget++;
   }
@@ -526,7 +571,6 @@ function runSimulation() {
     };
   });
 
-  // Final balance percentiles
   const sortedFinal = [...allFinalBal].sort((a,b)=>a-b);
   const finalP10 = percentile(sortedFinal, 0.10);
   const finalP25 = percentile(sortedFinal, 0.25);
@@ -534,48 +578,47 @@ function runSimulation() {
   const finalP75 = percentile(sortedFinal, 0.75);
   const finalP90 = percentile(sortedFinal, 0.90);
 
-  // Worst-5% sample run path
   const indexedRuns = allFinalBal.map((b, i) => ({bal: b, idx: i})).sort((a,b)=>a.bal-b.bal);
   const worst5Idx = indexedRuns[Math.floor(indexedRuns.length * 0.05)].idx;
   const worst5Path = allEquity[worst5Idx];
 
-  // Drawdown stats
   const sortedDD = [...allMaxDDPct].sort((a,b)=>a-b);
   const ddMedian = percentile(sortedDD, 0.50);
   const ddP90 = percentile(sortedDD, 0.90);
   const ddP95 = percentile(sortedDD, 0.95);
 
-  // Losing month stats
   const sortedLosing = [...allLosingMonthsCount].sort((a,b)=>a-b);
   const losingMedian = percentile(sortedLosing, 0.50);
   const losingP90 = percentile(sortedLosing, 0.90);
 
-  // Regime months stats
   const sortedRegime = [...allRegimeMonthsCount].sort((a,b)=>a-b);
   const regimeMedian = percentile(sortedRegime, 0.50);
 
-  // Worst month stats
   const sortedWorstMonth = [...allRunWorstMonthDollar].sort((a,b)=>a-b);
   const sortedWorstMonthPct = [...allRunWorstMonthPct].sort((a,b)=>a-b);
-  const overallWorstMonth = sortedWorstMonth[0]; // most negative
+  const overallWorstMonth = sortedWorstMonth[0];
   const overallWorstMonthPct = sortedWorstMonthPct[0];
   const medianWorstMonth = percentile(sortedWorstMonth, 0.50);
   const medianWorstMonthPct = percentile(sortedWorstMonthPct, 0.50);
 
-  // Probabilities
+  const sortedCosts = [...allRunCosts].sort((a,b)=>a-b);
+  const costMedian = percentile(sortedCosts, 0.50);
+  const costMean = sortedCosts.reduce((a,b)=>a+b,0) / (sortedCosts.length || 1);
+  const costAsPctMedianFinal = finalP50 > 0 ? (costMedian / (finalP50 + costMedian)) * 100 : 0;
+
   const probLevels = [200000, 300000, 400000, 500000, 750000, 1000000];
   const probHit = probLevels.map(t => sortedFinal.filter(b => b >= t).length / sortedFinal.length);
 
   const blowupPct = blowups / runsN * 100;
   const aboveTargetPct = aboveTarget / runsN * 100;
   const monthsBelow55Pct = totalMonthsRecorded > 0 ? (totalMonthsBelow55WR / totalMonthsRecorded * 100) : 0;
-  const losingMonthsPct = allMonthlyPnLPct.filter(p => p < 0).length / allMonthlyPnLPct.length * 100;
+  const losingMonthsPct = allMonthlyPnLPct.length > 0 ? (allMonthlyPnLPct.filter(p => p < 0).length / allMonthlyPnLPct.length * 100) : 0;
   const cls = (val, good, bad) => val >= good ? 'good' : (val <= bad ? 'bad' : 'warn');
 
   document.getElementById('summary').innerHTML = `
     <div style="margin-bottom:6px">
       <span class="big">${fmt(finalP50)}</span>
-      <small>median ending balance · ${runsN.toLocaleString()} runs · seed ${seed} · ${simulationMonths} months${regimeOn ? ' · regime coupling ON' : ' · regime coupling OFF'}</small>
+      <small>median ending balance · ${runsN.toLocaleString()} runs · seed ${seed} · ${simulationMonths} months${regimeOn ? ' · regime coupling ON' : ' · regime coupling OFF'}${costsOn ? ' · costs ON' : ' · costs OFF'}</small>
     </div>
     <div>
       <span class="stat"><span class="lbl">≥ Target ${fmt(targetN)} at end</span><span class="val ${cls(aboveTargetPct,50,20)}">${aboveTargetPct.toFixed(1)}%</span></span>
@@ -595,6 +638,13 @@ function runSimulation() {
       <span class="stat"><span class="lbl">Worst month observed (anywhere)</span><span class="val bad">${fmtSigned(overallWorstMonth)} (${(overallWorstMonthPct*100).toFixed(1)}%)</span></span>
       <span class="stat"><span class="lbl">Typical run's worst month</span><span class="val warn">${fmtSigned(medianWorstMonth)} (${(medianWorstMonthPct*100).toFixed(1)}%)</span></span>
     </div>
+    ${costsOn ? `
+    <div style="margin-top:6px">
+      <span class="stat"><span class="lbl">Total trading costs / run (median)</span><span class="val warn">${fmt(costMedian)}</span></span>
+      <span class="stat"><span class="lbl">Total trading costs / run (mean)</span><span class="val warn">${fmt(costMean)}</span></span>
+      <span class="stat"><span class="lbl">Cost as % of (final + cost) median</span><span class="val warn">${costAsPctMedianFinal.toFixed(1)}%</span></span>
+    </div>
+    ` : ''}
     <div style="margin-top:8px">
       <strong>Final balance:</strong>
       p10 ${fmt(finalP10)} · p25 ${fmt(finalP25)} · <strong>p50 ${fmt(finalP50)}</strong> · p75 ${fmt(finalP75)} · p90 ${fmt(finalP90)}
@@ -605,7 +655,6 @@ function runSimulation() {
     </div>
   `;
 
-  // Year-end milestones
   const milestonesEl = document.getElementById('milestones');
   milestonesEl.innerHTML = '<div class="header-label">Year-End Milestones (across all runs)</div>';
   const numYears = Math.ceil(simulationMonths / 12);
@@ -638,7 +687,6 @@ function runSimulation() {
   }
   milestonesEl.style.display = 'grid';
 
-  // Equity chart with worst-5% overlay
   if (equityChart) equityChart.destroy();
   equityChart = new Chart(document.getElementById('equityChart'), {
     type: 'line',
@@ -667,13 +715,11 @@ function runSimulation() {
     plugins: [yearLinesPlugin]
   });
 
-  // Monthly P&L histogram
   if (pnlChart) pnlChart.destroy();
-  // Buckets: ±25% in 1% increments (51 buckets centered on 0)
   const pnlPctValues = allMonthlyPnLPct.map(p => p * 100);
-  const pnlMin = Math.min(-2, Math.floor(Math.min(...pnlPctValues)));
-  const pnlMax = Math.max(2, Math.ceil(Math.max(...pnlPctValues)));
-  const pnlBucketSize = 1; // 1%
+  const pnlMin = pnlPctValues.length > 0 ? Math.min(-2, Math.floor(Math.min(...pnlPctValues))) : -25;
+  const pnlMax = pnlPctValues.length > 0 ? Math.max(2, Math.ceil(Math.max(...pnlPctValues))) : 25;
+  const pnlBucketSize = 1;
   const pnlNumBuckets = Math.ceil((pnlMax - pnlMin) / pnlBucketSize) + 1;
   const pnlBuckets = Array(pnlNumBuckets).fill(0);
   pnlPctValues.forEach(p => {
@@ -691,18 +737,14 @@ function runSimulation() {
     type: 'bar',
     data: {labels: pnlLabels, datasets: [{data: pnlBuckets, backgroundColor: pnlColors, borderWidth: 0}]},
     options: {
-      plugins: {
-        legend: {display: false},
-        tooltip: {callbacks: {title: items => 'Bucket: ' + items[0].label, label: i => i.parsed.y.toLocaleString() + ' months'}}
-      },
+      plugins: {legend: {display: false}, tooltip: {callbacks: {title: items => 'Bucket: ' + items[0].label, label: i => i.parsed.y.toLocaleString() + ' months'}}},
       scales: {
-        y: {ticks: {color:'#8b949e'}, grid:{color:'#30363d'}, title:{display:true, text:'# months across all runs', color:'#8b949e'}},
+        y: {ticks: {color:'#8b949e'}, grid:{color:'#30363d'}, title:{display:true, text:'# months', color:'#8b949e'}},
         x: {ticks: {color:'#8b949e', maxRotation:60, autoSkip:true, autoSkipPadding:6}, grid:{display:false}, title:{display:true, text:'Monthly P&L %', color:'#8b949e'}}
       }
     }
   });
 
-  // Final balance histogram
   if (histChart) histChart.destroy();
   const numBuckets = 30;
   const minB = sortedFinal[0];
@@ -725,10 +767,7 @@ function runSimulation() {
     type: 'bar',
     data: {labels: histLabels, datasets: [{data: buckets, backgroundColor: bucketColors, borderWidth: 0}]},
     options: {
-      plugins: {
-        legend: {display: false},
-        tooltip: {callbacks: {title: items => 'Bucket: ' + items[0].label, label: i => i.parsed.y + ' runs'}}
-      },
+      plugins: {legend: {display: false}, tooltip: {callbacks: {title: items => 'Bucket: ' + items[0].label, label: i => i.parsed.y + ' runs'}}},
       scales: {
         y: {ticks: {color:'#8b949e'}, grid:{color:'#30363d'}, title:{display:true, text:'# runs', color:'#8b949e'}},
         x: {ticks: {color:'#8b949e', maxRotation:60, autoSkip:true, autoSkipPadding:8}, grid:{display:false}}
@@ -736,7 +775,6 @@ function runSimulation() {
     }
   });
 
-  // WR distribution
   if (wrChart) wrChart.destroy();
   const wrBuckets = Array(20).fill(0);
   allMonthlyWR.forEach(wr => {
@@ -755,18 +793,14 @@ function runSimulation() {
     type: 'bar',
     data: {labels: wrLabels, datasets: [{data: wrBuckets, backgroundColor: wrColors, borderWidth: 0}]},
     options: {
-      plugins: {
-        legend: {display: false},
-        tooltip: {callbacks: {label: i => i.parsed.y.toLocaleString() + ' months'}}
-      },
+      plugins: {legend: {display: false}, tooltip: {callbacks: {label: i => i.parsed.y.toLocaleString() + ' months'}}},
       scales: {
-        y: {ticks: {color:'#8b949e'}, grid:{color:'#30363d'}, title:{display:true, text:'# months across all runs', color:'#8b949e'}},
+        y: {ticks: {color:'#8b949e'}, grid:{color:'#30363d'}, title:{display:true, text:'# months', color:'#8b949e'}},
         x: {ticks: {color:'#8b949e', maxRotation:60, autoSkip:true, autoSkipPadding:6}, grid:{display:false}, title:{display:true, text:'Realized monthly win rate', color:'#8b949e'}}
       }
     }
   });
 
-  // Per-month percentile table
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = perMonth.map((m, i) => {
     const yearIdx = Math.ceil((i+1)/12) - 1;
@@ -782,13 +816,13 @@ function saveInputs() {
     if (currencyInputs.includes(i.id)) val = parseCurrency(i.value);
     else if (i.type === 'checkbox') val = i.checked;
     else val = i.value;
-    localStorage.setItem('sim5_'+i.id, val);
+    localStorage.setItem('sim6_'+i.id, val);
   });
   document.getElementById('summary').innerText = 'Inputs saved.';
 }
 function loadInputs() {
   document.querySelectorAll('input,select').forEach(i=>{
-    const stored = localStorage.getItem('sim5_'+i.id);
+    const stored = localStorage.getItem('sim6_'+i.id);
     if (stored !== null) {
       if (i.type === 'checkbox') i.checked = stored === 'true';
       else if (currencyInputs.includes(i.id)) i.value = formatCurrency(stored);
