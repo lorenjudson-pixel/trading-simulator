@@ -146,6 +146,8 @@ var instrumentsNinja={
   SIL:{tickSize:0.005,tickValue:5.00,marginID:440,marginON:4400,isFutures:true,assetClass:'commodity'},
   SI:{tickSize:0.005,tickValue:25.00,marginID:2200,marginON:22000,isFutures:true,assetClass:'commodity'},
   MBT:{tickSize:5,tickValue:0.50,marginID:200,marginON:2000,isFutures:true,assetClass:'crypto'},
+  ETH:{tickSize:0.25,tickValue:12.50,marginID:1500,marginON:10000,isFutures:true,assetClass:'crypto'},
+  MET:{tickSize:0.5,tickValue:0.05,marginID:80,marginON:150,isFutures:true,assetClass:'crypto'},
   ZC:{tickSize:0.0025,tickValue:12.50,marginID:250,marginON:2475,isFutures:true,assetClass:'grain'},
   ZW:{tickSize:0.0025,tickValue:12.50,marginID:200,marginON:2000,isFutures:true,assetClass:'grain'},
   ZS:{tickSize:0.0025,tickValue:12.50,marginID:250,marginON:2475,isFutures:true,assetClass:'grain'},
@@ -187,6 +189,7 @@ var tosOverrides={
   CL:{marginID:32000,marginON:32000}, // 10× MCL (proportional to contract size)
   SIL:{marginID:4400,marginON:4400}, SI:{marginID:22000,marginON:22000},
   MBT:{marginID:2000,marginON:2000},
+  ETH:{marginID:30000,marginON:30000}, MET:{marginID:400,marginON:400},
   ZC:{marginID:2475,marginON:2475}, ZW:{marginID:2000,marginON:2000}, ZS:{marginID:2475,marginON:2475},
   ZT:{marginID:1540,marginON:1540}, ZN:{marginID:2475,marginON:2475}, ZB:{marginID:4620,marginON:4620},
   M6A:{marginID:209,marginON:209}, A6:{marginID:2090,marginON:2090},
@@ -219,14 +222,18 @@ var instrumentOptions = '<optgroup label="Index Futures">' +
   '<option value="MNQ">MNQ — Micro E-mini Nasdaq-100</option>' +
   '<option value="NQ">NQ — E-mini Nasdaq-100</option>' +
   '</optgroup>' +
-  '<optgroup label="Metals / Energy / Crypto">' +
+  '<optgroup label="Metals / Energy">' +
   '<option value="MGC">MGC — Micro Gold</option>' +
   '<option value="GC">GC — Gold</option>' +
   '<option value="SIL">SIL — Micro Silver</option>' +
   '<option value="SI">SI — Silver</option>' +
   '<option value="MCL">MCL — Micro Crude Oil ✓</option>' +
   '<option value="CL">CL — Crude Oil ✓</option>' +
+  '</optgroup>' +
+  '<optgroup label="Cryptocurrency">' +
   '<option value="MBT">MBT — Micro Bitcoin</option>' +
+  '<option value="MET">MET — Micro Ether</option>' +
+  '<option value="ETH">ETH — Ether</option>' +
   '</optgroup>' +
   '<optgroup label="Grains">' +
   '<option value="ZC">ZC — Corn</option>' +
