@@ -2,475 +2,824 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Trading Simulator – Live Preview</title>
+<title>Trading Strategy Simulator v5</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <style>
-body{margin:0;font-family:Inter,system-ui;background:#0d1117;color:#e6edf3}
-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#161b22;border-bottom:1px solid #30363d}
-header h1{font-size:18px;margin:0}
-header button{background:#238636;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:#0d1117;color:#e6edf3}
+header{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#161b22;border-bottom:1px solid #30363d;box-shadow:0 4px 12px rgba(0,0,0,0.4)}
+header h1{font-size:18px;margin:0;display:inline-block}
+header .v{font-size:11px;opacity:.6;margin-left:8px}
+header button{background:#238636;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;margin-left:6px;font-weight:600;font-size:13px}
+header button.secondary{background:#30363d}
+header button:hover{filter:brightness(1.15)}
 .container{padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
 .card{background:#161b22;border-radius:10px;padding:14px}
-label{font-size:13px;opacity:.9;display:block}
-input{width:100%;margin-top:4px;margin-bottom:8px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px}
-input[type=checkbox]{width:auto;margin-right:6px}
-canvas{background:#0d1117;margin-top:12px}
-.summary{grid-column:1/-1;font-size:18px;margin-top:8px}
-.tableWrap{grid-column:1/-1;max-height:320px;overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{border-bottom:1px solid #30363d;padding:6px;text-align:right}
-th{position:sticky;top:0;background:#161b22}
+.card h3{margin:0 0 10px 0;font-size:13px;color:#58a6ff;text-transform:uppercase;letter-spacing:.5px}
+.card.aplus{border:1px solid #f0883e}
+.card.aplus h3{color:#f0883e}
+.card.live{background:#0d2c1f;border:1px solid #2ea043}
+.card.live h3{color:#3fb950}
+.card.rules{border:1px solid #58a6ff44}
+.card.realism{border:1px solid #f085494d}
+.card.realism h3{color:#f85149}
+label{font-size:12px;opacity:.85;display:block;margin-top:6px}
+input,select{width:100%;margin-top:3px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:5px;padding:5px 7px;font-family:inherit;font-size:13px;box-sizing:border-box}
+input[type=checkbox]{width:auto;margin:0 6px 0 0}
+canvas{background:#0d1117;margin-top:8px}
+.summary{grid-column:1/-1;font-size:13px;background:#161b22;padding:16px;border-radius:10px;line-height:1.7}
+.summary .big{font-size:22px;font-weight:600;color:#3fb950;margin-right:12px}
+.summary .stat{display:inline-block;margin:6px 10px 6px 0;padding:8px 12px;background:#0d1117;border-radius:6px}
+.summary .stat .lbl{font-size:11px;opacity:.65;display:block;text-transform:uppercase}
+.summary .stat .val{font-size:16px;font-weight:600}
+.summary .stat .val.bad{color:#f85149}
+.summary .stat .val.good{color:#3fb950}
+.summary .stat .val.warn{color:#f0883e}
+.milestone-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;background:#161b22;padding:14px;border-radius:10px}
+.milestone-grid .header-label{grid-column:1/-1;color:#8b949e;font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin:0}
+.milestone-card{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:12px}
+.milestone-card h4{margin:0 0 6px;color:#58a6ff;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+.milestone-card .median{font-size:20px;font-weight:600;color:#3fb950;margin-bottom:6px}
+.milestone-card .row{display:flex;justify-content:space-between;font-size:12px;margin-top:3px;color:#c9d1d9}
+.milestone-card .row .lbl{opacity:.7}
+.milestone-card .target-pct{margin-top:8px;padding:6px;background:#161b22;border-radius:4px;text-align:center;font-size:12px}
+.tableWrap{grid-column:1/-1;max-height:400px;overflow:auto;background:#161b22;padding:12px;border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{border-bottom:1px solid #30363d;padding:5px 7px;text-align:right}
+th{position:sticky;top:0;background:#161b22;font-size:11px;color:#8b949e;text-transform:uppercase}
 th:first-child,td:first-child{text-align:center}
-.worst{background:#3a1c1c}
-.tooltip{position:relative;display:inline-block;cursor:help;margin-left:4px;color:#58a6ff}
-.tooltip .tooltiptext{visibility:hidden;width:280px;background:#1c2128;color:#e6edf3;text-align:left;border-radius:6px;padding:10px;position:absolute;z-index:1;bottom:125%;left:50%;margin-left:-140px;opacity:0;transition:opacity 0.3s;border:1px solid #30363d;font-size:12px;line-height:1.5}
-.tooltip .tooltiptext::after{content:"";position:absolute;top:100%;left:50%;margin-left:-5px;border-width:5px;border-style:solid;border-color:#30363d transparent transparent transparent}
-.tooltip:hover .tooltiptext{visibility:visible;opacity:1}
-.tooltiptext ul{margin:8px 0;padding-left:20px}
-.tooltiptext li{margin:4px 0}
+small{opacity:.6;font-size:11px;display:block;margin-top:2px}
+.section-title{grid-column:1/-1;color:#8b949e;font-size:12px;text-transform:uppercase;margin:8px 0 -8px 4px;letter-spacing:.5px}
+hr{border:none;border-top:1px solid #30363d;margin:8px 0}
+.live-block{font-size:13px;line-height:1.55}
+.live-block .h{color:#3fb950;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.live-block .row{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.live-block .row .lbl{opacity:.8}
+.live-block .row .val{font-family:'JetBrains Mono',Consolas,monospace}
+.live-block .footnote{margin-top:8px;font-size:11px;opacity:.7;font-style:italic;border-left:2px solid #f0883e;padding-left:8px}
+.realism-note{margin-top:6px;padding:6px;background:#0d1117;border-radius:4px;font-size:11px;color:#f85149bb;border-left:2px solid #f85149}
 </style>
 </head>
 <body>
 <header>
-  <h1>Trading Strategy Simulator v2 (Monthly Risk Calc)</h1>
   <div>
-    <button id="saveBtn">💾 Save Inputs</button>
-    <button id="previewBtn">▶ Preview</button>
+    <h1>Trading Strategy Simulator</h1>
+    <span class="v">v5 — Sandbox Build</span>
+  </div>
+  <div>
+    <button class="secondary" id="saveBtn">Save Inputs</button>
+    <button id="previewBtn">Run Simulation</button>
   </div>
 </header>
-
 <div class="container">
+
+  <div class="section-title">Inputs</div>
+
   <div class="card">
     <h3>Account</h3>
-    <label>Starting Balance ($)</label><input id="start" value="50000" />
-    <label>Months</label><input id="months" value="36" type="number" min="1" />
-    <label>Tax %</label><input id="tax" value="30" />
-    <label>Target Balance ($)</label><input id="target" value="200000" />
-    <label>Monte Carlo Runs</label><input id="runs" value="500" />
-    <label>
-      <input type="checkbox" id="tysonMode" /> 🥊 Mike Tyson Mode (Brutal Start)
-      <span class="tooltip">ℹ️
-        <span class="tooltiptext">
-          <strong>Early Drawdown Gauntlet (First 5 months):</strong>
-          <ul>
-            <li>2-3 months forced below 55% win rate</li>
-            <li>1-2 months with guaranteed losing streaks of 6+ consecutive losses</li>
-            <li>At least 1 month with win rate reduced by 30%</li>
-          </ul>
-          Tests if your strategy can survive getting "punched in the face" early.
-        </span>
-      </span>
-    </label>
-    <label>
-      <input type="checkbox" id="vacationMode" /> 🏖️ Vacation Mode
-      <span class="tooltip">ℹ️
-        <span class="tooltiptext">
-          <strong>2 weeks vacation in June & December:</strong>
-          <ul>
-            <li>Reduces trades by 50% in these months</li>
-            <li>June: Summer break, family time, slower markets</li>
-            <li>December: Holidays (Christmas/New Year), low liquidity</li>
-          </ul>
-          Models realistic work-life balance and opportunity cost of time off.
-        </span>
-      </span>
-    </label>
+    <label>Starting Balance ($)</label><input id="start" value="150000" />
+    <label>Months</label><input id="months" type="number" value="36" min="1" />
+    <label>Tax % (annual on net)</label><input id="tax" value="34" />
+    <label>Target Balance ($)</label><input id="target" value="400000" />
+    <label>Monte Carlo Runs</label><input id="runs" type="number" value="2000" />
+    <label>Seed (blank = random)</label><input id="seed" placeholder="leave blank for random" />
+    <label><input type="checkbox" id="tysonMode" /> Tyson Mode (early DD stress)</label>
+    <label><input type="checkbox" id="vacationMode" /> Vacation Mode (Jun &amp; Dec −50%)</label>
+  </div>
+
+  <div class="card rules">
+    <h3>Risk Rules</h3>
+    <label>Trading Days / Month</label><input id="tradingDays" type="number" value="21" />
+    <label>Daily Loss Cap (R; 0 = none)</label><input id="dailyCap" value="3" />
+    <small>Halts trading the rest of the day after this many R lost.</small>
+    <label>Weekly Loss Cap (R; 0 = none)</label><input id="weeklyCap" value="6" />
+    <label>Risk Sizing</label>
+    <select id="sizingMode">
+      <option value="month">Month-start equity</option>
+      <option value="trade">Per-trade equity (continuous)</option>
+    </select>
+    <label>Correlation Factor (0–1)</label><input id="corr" value="0.2" />
+    <small>0 = independent. Higher = same-day cluster.</small>
+  </div>
+
+  <div class="card realism">
+    <h3>Regime Coupling (Realism)</h3>
+    <label><input type="checkbox" id="regimeOn" checked /> Enable bad regime months</label>
+    <small>When enabled, some months are "bad regime" — fewer setups AND lower win rate, simulating chop, news risk, regime change.</small>
+    <label>Bad Regime Probability (% per month)</label><input id="regimeProb" value="12" />
+    <label>Trade Count Reduction (%)</label><input id="regimeTradeCut" value="40" />
+    <label>Win Rate Reduction (percentage points)</label><input id="regimeWRCut" value="8" />
+    <div class="realism-note">Default ON. Makes the model more honest. Turn off to see "academic" view (results will look better but less realistic).</div>
   </div>
 
   <div class="card">
     <h3>Withdrawals (Monthly)</h3>
     <label>Year 1</label><input id="w1" value="0" />
-    <label>Year 2</label><input id="w2" value="2000" />
-    <label>Year 3</label><input id="w3" value="3000" />
-    <label>Year 4</label><input id="w4" value="3000" />
-    <label>Year 5</label><input id="w5" value="3000" />
-    <label>No Withdrawals for First (months)</label><input id="noWMonths" value="0" type="number" min="0" />
+    <label>Year 2</label><input id="w2" value="0" />
+    <label>Year 3</label><input id="w3" value="0" />
+    <label>Year 4</label><input id="w4" value="0" />
+    <label>Year 5</label><input id="w5" value="0" />
+    <label>No Withdrawals for First (months)</label><input id="noWMonths" type="number" value="12" />
   </div>
 
+  <div class="card live">
+    <h3>Live Expectancy (math, no variance)</h3>
+    <div id="liveExp" class="live-block">Update inputs to see expectancy.</div>
+  </div>
+
+  <div class="section-title">Strategies</div>
+
   <div class="card">
-    <h3>Strategy A</h3>
+    <h3>Strategy A (Standard)</h3>
     <label><input type="checkbox" id="en" checked /> Enable</label>
-    <label>Risk %</label><input id="risk" value="1" />
-    <label>Win Rate %</label><input id="win" value="50" />
-    <label>R:R</label><input id="rr" value="2" />
+    <label>Risk %</label><input id="risk" value="1.5" />
+    <label>Win Rate %</label><input id="win" value="60" />
+    <label>R:R</label><input id="rr" value="1.3" />
     <label>Trades / Month</label><input id="trades" value="20" />
-    <label>Trades Variability ±</label><input id="varA" value="3" />
+    <label>Trades Variability ±</label><input id="varA" value="7" />
+  </div>
+
+  <div class="card aplus">
+    <h3>A+ Setups (rare best)</h3>
+    <label><input type="checkbox" id="enA" checked /> Enable</label>
+    <label>Risk %</label><input id="riskA" value="3" />
+    <label>Win Rate %</label><input id="winA" value="65" />
+    <label>R:R</label><input id="rrA" value="2" />
+    <label>Avg Trades / Month</label><input id="tradesA" value="1.5" />
+    <label>Max A+ / Month</label><input id="maxA" type="number" value="3" />
   </div>
 
   <div class="card">
-    <h3>Strategy B</h3>
+    <h3>Strategy B (optional)</h3>
     <label><input type="checkbox" id="en2" /> Enable</label>
-    <label>Risk %</label><input id="risk2" value="0.5" />
-    <label>Win Rate %</label><input id="win2" value="45" />
+    <label>Risk %</label><input id="risk2" value="0.75" />
+    <label>Win Rate %</label><input id="win2" value="50" />
     <label>R:R</label><input id="rr2" value="2" />
     <label>Trades / Month</label><input id="trades2" value="10" />
-    <label>Trades Variability ±</label><input id="varB" value="2" />
+    <label>Trades Variability ±</label><input id="varB" value="3" />
   </div>
 
   <div class="card">
-    <h3>Strategy C</h3>
+    <h3>Strategy C (optional)</h3>
     <label><input type="checkbox" id="en3" /> Enable</label>
-    <label>Risk %</label><input id="risk3" value="0.25" />
+    <label>Risk %</label><input id="risk3" value="0.5" />
     <label>Win Rate %</label><input id="win3" value="55" />
     <label>R:R</label><input id="rr3" value="1.5" />
     <label>Trades / Month</label><input id="trades3" value="8" />
-    <label>Trades Variability ±</label><input id="varC" value="2" />
+    <label>Trades Variability ±</label><input id="varC" value="3" />
   </div>
 
-  <div class="summary" id="summary">Click Preview to run simulation</div>
+  <div class="summary" id="summary">Click "Run Simulation" to begin.</div>
+
+  <div class="milestone-grid" id="milestones" style="display:none">
+    <div class="header-label">Year-End Milestones (across all runs)</div>
+  </div>
 
   <div style="grid-column:1/-1">
-    <canvas id="equityChart" height="160"></canvas>
+    <div style="color:#8b949e;font-size:12px;text-transform:uppercase;margin-bottom:4px;letter-spacing:.5px">Equity Path Distribution (median, percentile bands, worst 5% sample, year markers)</div>
+    <canvas id="equityChart" height="170"></canvas>
   </div>
-
   <div style="grid-column:1/-1">
-    <canvas id="tradeChart" height="140"></canvas>
+    <div style="color:#8b949e;font-size:12px;text-transform:uppercase;margin-bottom:4px;letter-spacing:.5px">Monthly P&amp;L Distribution (where the losing months live)</div>
+    <canvas id="pnlChart" height="120"></canvas>
   </div>
-
+  <div style="grid-column:1/-1">
+    <div style="color:#8b949e;font-size:12px;text-transform:uppercase;margin-bottom:4px;letter-spacing:.5px">Final Balance Distribution</div>
+    <canvas id="histChart" height="120"></canvas>
+  </div>
+  <div style="grid-column:1/-1">
+    <div style="color:#8b949e;font-size:12px;text-transform:uppercase;margin-bottom:4px;letter-spacing:.5px">Monthly Win Rate Distribution (the random walk in WR)</div>
+    <canvas id="wrChart" height="120"></canvas>
+  </div>
   <div class="tableWrap">
+    <div style="color:#8b949e;font-size:12px;text-transform:uppercase;margin-bottom:8px;letter-spacing:.5px">Per-Month Percentiles (across all runs)</div>
     <table>
       <thead>
         <tr>
-          <th>Month</th><th>Start</th><th>Gross</th><th>Tax</th><th>Net</th><th>Withdraw</th><th>End</th><th>$/Trade</th><th>Trades</th><th>Wins</th>
+          <th>Month</th><th>p10</th><th>p25</th><th>Median</th><th>p75</th><th>p90</th><th>Withdraw</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
     </table>
   </div>
 </div>
-
 <script>
-let equityChart, tradeChart;
+function mulberry32(a){return function(){var t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;}}
 const fmt = n => '$' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0});
-
-function formatCurrency(value) {
-  const num = parseInt(String(value).replace(/[^0-9]/g, '')) || 0;
-  return '$' + num.toLocaleString();
-}
-
-function parseCurrency(value) {
-  return parseInt(String(value).replace(/[^0-9]/g, '')) || 0;
-}
-
-function runSimulation(){
-  const startVal = parseCurrency(document.getElementById('start').value);
-  const simulationMonths = +document.getElementById('months').value;
-  const taxR = +document.getElementById('tax').value/100;
-  const targetN = parseCurrency(document.getElementById('target').value);
-  const runsN = +document.getElementById('runs').value;
-  const w = [
-    parseCurrency(document.getElementById('w1').value),
-    parseCurrency(document.getElementById('w2').value),
-    parseCurrency(document.getElementById('w3').value),
-    parseCurrency(document.getElementById('w4').value),
-    parseCurrency(document.getElementById('w5').value)
-  ];
-
-  const strategies=[
-    {e:'en',r:'risk',w:'win',rr:'rr',t:'trades',v:'varA'},
-    {e:'en2',r:'risk2',w:'win2',rr:'rr2',t:'trades2',v:'varB'},
-    {e:'en3',r:'risk3',w:'win3',rr:'rr3',t:'trades3',v:'varC'}
-  ].map(s=>({
-    enabled:document.getElementById(s.e),
-    risk:document.getElementById(s.r),
-    win:document.getElementById(s.w),
-    rr:document.getElementById(s.rr),
-    trades:document.getElementById(s.t),
-    var:document.getElementById(s.v)
-  }));
-
-  const noW1=document.getElementById('noWMonths');
-  const noWithdrawMonths = +noW1.value;
-  const tysonMode = document.getElementById('tysonMode').checked;
-  const vacationMode = document.getElementById('vacationMode').checked;
-  
-  let labels=[], equity=[], tradesSeries=[], winPctSeries=[], finalBalances=[], blowups=0;
-  let tradesA=[], tradesB=[], tradesC=[];
-  const tbody = document.getElementById('tbody'); tbody.innerHTML='';
-  let above=0, worstGross=Infinity;
-  
-  let maxDrawdownTrades = 0, maxDrawdownAmount = 0;
-  let totalDrawdowns = 0, totalDrawdownTrades = 0, totalDrawdownAmount = 0, drawdownCount = 0;
-  let monthsBelow55 = 0;
-  let largestLosingMonth = 0;
-  
-  // Mike Tyson Mode: Pre-determine which early months get punched
-  let tysonMonths = [];
-  if(tysonMode) {
-    // Randomly select 2-3 months out of first 5 to have below 55% win rate
-    const badWinRateCount = Math.floor(Math.random() * 2) + 2; // 2 or 3 months
-    const losingStreakCount = Math.floor(Math.random() * 2) + 1; // 1 or 2 months
-    const worstOutcomeMonth = Math.floor(Math.random() * 5) + 1; // 1 random month 1-5
-    
-    const availableMonths = [1, 2, 3, 4, 5];
-    const badWinRateMonths = [];
-    const losingStreakMonths = [];
-    
-    // Pick bad win rate months
-    for(let i = 0; i < badWinRateCount; i++) {
-      const idx = Math.floor(Math.random() * availableMonths.length);
-      badWinRateMonths.push(availableMonths.splice(idx, 1)[0]);
-    }
-    
-    // Pick losing streak months from remaining
-    for(let i = 0; i < losingStreakCount && availableMonths.length > 0; i++) {
-      const idx = Math.floor(Math.random() * availableMonths.length);
-      losingStreakMonths.push(availableMonths.splice(idx, 1)[0]);
-    }
-    
-    tysonMonths = {
-      badWinRate: badWinRateMonths,
-      losingStreak: losingStreakMonths,
-      worstOutcome: worstOutcomeMonth
-    };
-  }
-
-  for(let r=0;r<runsN;r++){
-    let bal=startVal;
-    let monthCounter = 0;
-    for(let m=1;m<=simulationMonths;m++){
-      monthCounter++;
-      if(bal<=0){bal=0; continue;}
-      
-      const monthStartBal = bal;
-      let gross=0, wins=0, tr=0;
-      let trA=0, trB=0, trC=0;
-      let totalRiskPerTrade = 0;
-      
-      let currentLosses = 0, currentLossAmount = 0;
-      let monthMaxLosses = 0, monthMaxLossAmount = 0;
-      
-      // Mike Tyson Mode adjustments for this month
-      let isBadWinRateMonth = tysonMode && tysonMonths.badWinRate.includes(monthCounter);
-      let isLosingStreakMonth = tysonMode && tysonMonths.losingStreak.includes(monthCounter);
-      let isWorstOutcomeMonth = tysonMode && tysonMonths.worstOutcome === monthCounter;
-      let forcedLosses = 0;
-      
-      // Vacation Mode: Determine if this is a vacation month (June=6, December=12)
-      const monthOfYear = ((monthCounter - 1) % 12) + 1;
-      const isVacationMonth = vacationMode && (monthOfYear === 6 || monthOfYear === 12);
-      
-      strategies.forEach((s, idx)=>{
-        if(!s.enabled.checked) return;
-        
-        const base=+s.trades.value;
-        const variability=+s.var.value;
-        let tpm=Math.max(0, base + Math.floor(Math.random()*(2*variability+1)) - variability);
-        
-        // Reduce trades by 50% during vacation months
-        if(isVacationMonth) {
-          tpm = Math.round(tpm * 0.5);
-        }
-        
-        tr+=tpm;
-        if(idx===0) trA=tpm;
-        if(idx===1) trB=tpm;
-        if(idx===2) trC=tpm;
-        
-        const riskAmt = monthStartBal * (+s.risk.value / 100);
-        totalRiskPerTrade += riskAmt * tpm;
-        
-        // Calculate effective win rate for this month
-        let effectiveWinRate = +s.win.value / 100;
-        if(isBadWinRateMonth) {
-          effectiveWinRate = Math.min(effectiveWinRate, 0.48); // Cap at 48% for bad months
-        }
-        if(isWorstOutcomeMonth) {
-          effectiveWinRate = effectiveWinRate * 0.7; // Reduce win rate by 30% for worst month
-        }
-        
-        for(let i=0;i<tpm;i++){
-          let isWin = Math.random() < effectiveWinRate;
-          
-          // Force losing streak in designated months
-          if(isLosingStreakMonth && i < 6 && forcedLosses < 6) {
-            isWin = false;
-            forcedLosses++;
-          }
-          
-          if(isWin){
-            wins++; 
-            const profit = riskAmt * +s.rr.value;
-            bal += profit;
-            gross += profit;
-            
-            if(currentLosses > 0) {
-              if(currentLosses > monthMaxLosses) {
-                monthMaxLosses = currentLosses;
-                monthMaxLossAmount = currentLossAmount;
-              }
-              currentLosses = 0;
-              currentLossAmount = 0;
-            }
-          } else {
-            bal -= riskAmt; 
-            gross -= riskAmt;
-            
-            currentLosses++;
-            currentLossAmount += riskAmt;
-          }
-        }
-      });
-      
-      if(currentLosses > 0) {
-        if(currentLosses > monthMaxLosses) {
-          monthMaxLosses = currentLosses;
-          monthMaxLossAmount = currentLossAmount;
-        }
-      }
-      
-      if(r === 0) {
-        if(monthMaxLosses > maxDrawdownTrades) {
-          maxDrawdownTrades = monthMaxLosses;
-          maxDrawdownAmount = monthMaxLossAmount;
-        }
-        
-        if(monthMaxLosses > 0) {
-          totalDrawdownTrades += monthMaxLosses;
-          totalDrawdownAmount += monthMaxLossAmount;
-          drawdownCount++;
-        }
-        
-        const monthWinRate = tr > 0 ? (wins / tr * 100) : 0;
-        if(monthWinRate < 55) {
-          monthsBelow55++;
-        }
-        
-        if(gross < largestLosingMonth) {
-          largestLosingMonth = gross;
-        }
-      }
-      
-      const taxAmt=Math.max(0,gross)*taxR; bal-=taxAmt;
-      const netProfit = gross - taxAmt;
-      
-      const currentYear = Math.ceil(monthCounter / 12);
-      const wd=(monthCounter > noWithdrawMonths ? (w[currentYear-1]||0) : 0); 
-      bal-=wd;
-      if(bal<0) bal=0;
-      
-      const avgRiskPerTrade = tr > 0 ? (totalRiskPerTrade / tr) : 0;
-
-      if(r===0){
-        labels.push(labels.length+1);
-        equity.push(bal);
-        tradesSeries.push(tr);
-        tradesA.push(trA);
-        tradesB.push(trB);
-        tradesC.push(trC);
-        winPctSeries.push(tr>0 ? (wins/tr*100) : 0);
-        const row=`<tr class="${gross<worstGross?'worst':''}"><td>${labels.length}</td><td>${fmt(monthStartBal)}</td><td>${fmt(gross)}</td><td>${fmt(taxAmt)}</td><td>${fmt(netProfit)}</td><td>${fmt(wd)}</td><td>${fmt(bal)}</td><td>${fmt(avgRiskPerTrade)}</td><td>${tr}</td><td>${wins}</td></tr>`;
-        if(gross<worstGross) worstGross=gross;
-        tbody.innerHTML+=row;
-      }
-    }
-    finalBalances.push(bal);
-    if(bal>=targetN) above++; if(bal<=0) blowups++;
-  }
-
-  const totalMonths = labels.length;
-  const avgDrawdownTrades = drawdownCount > 0 ? (totalDrawdownTrades / drawdownCount) : 0;
-  const avgDrawdownAmount = drawdownCount > 0 ? (totalDrawdownAmount / drawdownCount) : 0;
-  const monthsBelow55Pct = totalMonths > 0 ? ((monthsBelow55 / totalMonths) * 100) : 0;
-
-  document.getElementById('summary').innerHTML=
-    `Ending Balance: ${fmt(equity.at(-1))} | ≥ Target: ${Math.round(above/runsN*100)}% | Blow‑up: ${Math.round(blowups/runsN*100)}%<br>` +
-    `Max Drawdown: -${maxDrawdownTrades} trades / -${fmt(Math.round(maxDrawdownAmount))}<br>` +
-    `Avg Drawdown: -${Math.round(avgDrawdownTrades)} trades / -${fmt(Math.round(avgDrawdownAmount))}<br>` +
-    `Months Below 55% Win Rate: ${monthsBelow55} (${monthsBelow55Pct.toFixed(1)}%)<br>` +
-    `Largest Losing Month: -${fmt(Math.round(Math.abs(largestLosingMonth)))}`;
-
-  if(equityChart) equityChart.destroy();
-  equityChart=new Chart(document.getElementById('equityChart'),{
-    type:'line',
-    data:{labels,datasets:[{data:equity,borderColor:'#2ea043',backgroundColor:'rgba(46,160,67,.18)',fill:true,tension:0.25,pointRadius:0}]},
-    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)}}}}
-  });
-
-  if(tradeChart) tradeChart.destroy();
-  tradeChart=new Chart(document.getElementById('tradeChart'),{
-    data:{labels,datasets:[
-      {type:'bar',label:'Strategy A',data:tradesA,yAxisID:'y',backgroundColor:'#8b949e',stack:'trades',order:2},
-      {type:'bar',label:'Strategy B',data:tradesB,yAxisID:'y',backgroundColor:'#a371f7',stack:'trades',order:2},
-      {type:'bar',label:'Strategy C',data:tradesC,yAxisID:'y',backgroundColor:'#f78166',stack:'trades',order:2},
-      {type:'line',label:'Win %',data:winPctSeries,yAxisID:'y1',borderColor:'#58a6ff',backgroundColor:'#58a6ff',borderWidth:2,tension:0.3,pointRadius:3,pointBackgroundColor:'#58a6ff',order:0},
-      {type:'line',label:'50% Threshold',data:labels.map(()=>50),yAxisID:'y1',borderColor:'#ff4d4d',borderWidth:1,pointRadius:0,fill:false,order:1}
-    ]},
-    options:{
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{labels:{color:'#e6edf3'}},
-        datalabels:{
-          display:true,
-          color:'#ffffff',
-          font:{size:11,weight:'bold'},
-          formatter:(value)=>value>0?value.toLocaleString():'',
-          anchor:'center',
-          align:'center'
-        }
-      },
-      scales:{
-        y:{title:{display:true,text:'Trades'},stacked:true},
-        y1:{position:'right',min:0,max:100,title:{display:true,text:'Win %'},ticks:{callback:v=>v+'%'}}
-      }
-    }
-  });
-}
-
-const currencyInputs = ['start', 'target', 'w1', 'w2', 'w3', 'w4', 'w5'];
-const numericInputs = ['noWMonths'];
-
-document.getElementById('previewBtn').onclick=runSimulation;
-
-document.getElementById('saveBtn').onclick=()=>{
-  document.querySelectorAll('input').forEach(i=>{
-    let val;
-    if(currencyInputs.includes(i.id)) {
-      val = parseCurrency(i.value);
-    } else if(i.type==='checkbox') {
-      val = i.checked;
-    } else {
-      val = i.value;
-    }
-    localStorage.setItem('sim_'+i.id, val);
-  });
-  document.getElementById('summary').innerText='Inputs saved ✔';
+const fmtBig = n => {
+  if (Math.abs(n) >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (Math.abs(n) >= 1e3) return '$' + (n/1e3).toFixed(0) + 'k';
+  return fmt(n);
+};
+const fmtSigned = n => (n >= 0 ? '+' : '') + fmt(n);
+function formatCurrency(value){const num=parseInt(String(value).replace(/[^0-9]/g,''))||0;return '$'+num.toLocaleString();}
+function parseCurrency(value){return parseInt(String(value).replace(/[^0-9]/g,''))||0;}
+const v = id => document.getElementById(id).value;
+const vn = id => +v(id);
+const vc = id => parseCurrency(v(id));
+const vChk = id => document.getElementById(id).checked;
+const percentile = (sortedAsc, p) => {
+  if (sortedAsc.length === 0) return 0;
+  const idx = Math.min(sortedAsc.length - 1, Math.floor(sortedAsc.length * p));
+  return sortedAsc[idx];
 };
 
-window.onload=()=>{
-  document.querySelectorAll('input').forEach(i=>{
-    const v=localStorage.getItem('sim_'+i.id);
-    if(v!==null) {
-      if(i.type==='checkbox') {
-        i.checked = v==='true';
-      } else if(currencyInputs.includes(i.id)) {
-        i.value = formatCurrency(v);
-      } else {
-        i.value = v;
+let equityChart, histChart, wrChart, pnlChart;
+
+const yearLinesPlugin = {
+  id: 'yearLines',
+  afterDatasetsDraw(chart) {
+    const {ctx, chartArea, scales} = chart;
+    if (!scales.x) return;
+    for (let yr = 1; yr <= 10; yr++) {
+      const month = yr * 12;
+      const xPos = scales.x.getPixelForValue(month);
+      if (!isFinite(xPos) || xPos < chartArea.left - 1 || xPos > chartArea.right + 1) continue;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(139,148,158,0.45)';
+      ctx.setLineDash([4,4]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(xPos, chartArea.top);
+      ctx.lineTo(xPos, chartArea.bottom);
+      ctx.stroke();
+      ctx.fillStyle = '#8b949e';
+      ctx.font = '11px sans-serif';
+      ctx.fillText('Y' + yr, xPos + 4, chartArea.top + 14);
+      ctx.restore();
+    }
+  }
+};
+
+function calcLiveExpectancy() {
+  const strats = [
+    {label:'A (Standard)', en:vChk('en'), risk:vn('risk')/100, win:vn('win')/100, rr:vn('rr'), trades:vn('trades')},
+    {label:'B', en:vChk('en2'), risk:vn('risk2')/100, win:vn('win2')/100, rr:vn('rr2'), trades:vn('trades2')},
+    {label:'C', en:vChk('en3'), risk:vn('risk3')/100, win:vn('win3')/100, rr:vn('rr3'), trades:vn('trades3')}
+  ];
+  const aPlus = {label:'A+', en:vChk('enA'), risk:vn('riskA')/100, win:vn('winA')/100, rr:vn('rrA'), trades:vn('tradesA')};
+  let html = '<div class="h">Per-Strategy Math</div>';
+  let monthlyMult = 1, anyEnabled = false;
+  [...strats, aPlus].forEach(s => {
+    if (!s.en) return;
+    anyEnabled = true;
+    const evPct = s.risk * (s.win * s.rr - (1 - s.win));
+    const monthlyMultS = Math.pow(1 + evPct, s.trades);
+    monthlyMult *= monthlyMultS;
+    const c = evPct >= 0 ? '#3fb950' : '#f85149';
+    html += `<div class="row"><span class="lbl">${s.label} (${s.trades} trades × <span style="color:${c}">${(evPct*100).toFixed(2)}%</span>/trade)</span><span class="val" style="color:${c}">${((monthlyMultS-1)*100).toFixed(2)}%/mo</span></div>`;
+  });
+  if (!anyEnabled) {
+    document.getElementById('liveExp').innerHTML = '<small>No strategies enabled.</small>';
+    return;
+  }
+  const tax = vn('tax')/100;
+  const months = vn('months');
+  const periodMult = Math.pow(monthlyMult, months);
+  const yearly = Math.pow(monthlyMult, 12);
+  const afterTaxPeriod = 1 + (periodMult - 1) * (1 - tax);
+  const start = vc('start');
+  const target = vc('target');
+  const ok = start * afterTaxPeriod >= target;
+  html += `<hr>`;
+  html += `<div class="h">If Math Plays Out Perfectly</div>`;
+  html += `<div class="row"><span class="lbl">Combined growth</span><span class="val">+${((monthlyMult-1)*100).toFixed(2)}% per month</span></div>`;
+  html += `<div class="row"><span class="lbl">Annualized</span><span class="val">${yearly.toFixed(2)}× per year</span></div>`;
+  html += `<div class="row"><span class="lbl">Over ${months} months (pre-tax)</span><span class="val">${periodMult.toFixed(2)}× → ${fmtBig(start * periodMult)}</span></div>`;
+  html += `<div class="row"><span class="lbl">After ${(tax*100).toFixed(0)}% tax</span><span class="val" style="color:${ok?'#3fb950':'#f85149'}">${fmtBig(start * afterTaxPeriod)}</span></div>`;
+  html += `<div class="row"><span class="lbl">vs target ${fmtBig(target)}</span><span class="val" style="color:${ok?'#3fb950':'#f85149'}">${ok ? 'EV exceeds target' : 'EV below target'}</span></div>`;
+  html += `<div class="footnote">Theoretical "perfect execution" path with no variance, no drawdowns, no risk caps, no bad regimes. Real Monte Carlo will be much lower. Sanity-check only.</div>`;
+  document.getElementById('liveExp').innerHTML = html;
+}
+
+function runSimulation() {
+  const startVal = vc('start');
+  const simulationMonths = vn('months');
+  const taxR = vn('tax')/100;
+  const targetN = vc('target');
+  const runsN = vn('runs');
+  const seedRaw = v('seed').trim();
+  const seed = seedRaw ? (parseInt(seedRaw) >>> 0) : (Math.floor(Math.random() * 0x7fffffff));
+  const rng = mulberry32(seed);
+  const tradingDays = Math.max(1, vn('tradingDays'));
+  const dailyCapR = vn('dailyCap');
+  const weeklyCapR = vn('weeklyCap');
+  const sizingMode = document.getElementById('sizingMode').value;
+  const corr = Math.max(0, Math.min(1, vn('corr')));
+  const w = [vc('w1'), vc('w2'), vc('w3'), vc('w4'), vc('w5')];
+  const noWithdrawMonths = vn('noWMonths');
+  const tysonMode = vChk('tysonMode');
+  const vacationMode = vChk('vacationMode');
+  const regimeOn = vChk('regimeOn');
+  const regimeProb = vn('regimeProb') / 100;
+  const regimeTradeCut = vn('regimeTradeCut') / 100;
+  const regimeWRCut = vn('regimeWRCut') / 100;
+
+  const strats = [
+    {idx:0, en:vChk('en'), risk:vn('risk')/100, win:vn('win')/100, rr:vn('rr'), trades:vn('trades'), variance:vn('varA')},
+    {idx:1, en:vChk('en2'), risk:vn('risk2')/100, win:vn('win2')/100, rr:vn('rr2'), trades:vn('trades2'), variance:vn('varB')},
+    {idx:2, en:vChk('en3'), risk:vn('risk3')/100, win:vn('win3')/100, rr:vn('rr3'), trades:vn('trades3'), variance:vn('varC')}
+  ];
+  const aPlus = {en:vChk('enA'), risk:vn('riskA')/100, win:vn('winA')/100, rr:vn('rrA'), trades:vn('tradesA'), maxTrades:vn('maxA')};
+
+  const allEquity = [];
+  const allMaxDDPct = [];
+  const allFinalBal = [];
+  const allMonthlyWR = [];
+  const allMonthlyPnLPct = [];
+  const allMonthlyPnLDollar = [];
+  const allLosingMonthsCount = [];
+  const allRegimeMonthsCount = [];
+  const allRunWorstMonthDollar = [];
+  const allRunWorstMonthPct = [];
+  let blowups = 0, aboveTarget = 0;
+  let totalMonthsBelow55WR = 0, totalMonthsRecorded = 0;
+
+  const sampleTrades = (avg, variance) => {
+    const min = Math.max(0, avg - variance);
+    const max = avg + variance;
+    return Math.max(0, Math.round(min + rng() * (max - min)));
+  };
+  const distributeAcrossDays = (n, days) => {
+    const dist = new Array(days).fill(0);
+    for (let i = 0; i < n; i++) dist[Math.floor(rng() * days)]++;
+    return dist;
+  };
+
+  for (let r = 0; r < runsN; r++) {
+    let bal = startVal;
+    let peak = startVal;
+    let maxDDPct = 0;
+    let YTDpnl = 0;
+    const path = [];
+    let losingMonthsThisRun = 0;
+    let regimeMonthsThisRun = 0;
+    let runWorstMonthDollar = 0;
+    let runWorstMonthPct = 0;
+
+    let tysonBadWR = [], tysonStreak = [], tysonWorst = -1;
+    if (tysonMode) {
+      const months = [1,2,3,4,5];
+      const shuffled = [...months].sort(() => rng() - 0.5);
+      const numBad = 2 + Math.floor(rng() * 2);
+      const numStreak = 1 + Math.floor(rng() * 2);
+      tysonBadWR = shuffled.slice(0, numBad);
+      tysonStreak = shuffled.slice(numBad, numBad + numStreak);
+      tysonWorst = months[Math.floor(rng() * 5)];
+    }
+
+    for (let m = 1; m <= simulationMonths; m++) {
+      const monthStartBal = bal;
+      const monthOfYear = ((m - 1) % 12) + 1;
+      const yearIdx = Math.ceil(m / 12) - 1;
+      const isVacation = vacationMode && (monthOfYear === 6 || monthOfYear === 12);
+      const isBadWR = tysonMode && tysonBadWR.includes(m);
+      const isStreak = tysonMode && tysonStreak.includes(m);
+      const isWorst = tysonMode && tysonWorst === m;
+      const isBadRegime = regimeOn && rng() < regimeProb;
+      if (isBadRegime) regimeMonthsThisRun++;
+
+      let monthTrades = 0, monthWins = 0;
+      let forcedLossesRemaining = isStreak ? 6 : 0;
+
+      if (bal > 0) {
+        const tradesByStrat = strats.map(s => {
+          if (!s.en) return 0;
+          let t = sampleTrades(s.trades, s.variance);
+          if (isVacation) t = Math.round(t * 0.5);
+          if (isBadRegime) t = Math.round(t * (1 - regimeTradeCut));
+          return t;
+        });
+        let aPlusTrades = 0;
+        if (aPlus.en) {
+          const variance = Math.min(aPlus.maxTrades, 2);
+          aPlusTrades = Math.min(aPlus.maxTrades, sampleTrades(aPlus.trades, variance));
+          if (isVacation) aPlusTrades = Math.round(aPlusTrades * 0.5);
+          if (isBadRegime) aPlusTrades = Math.round(aPlusTrades * (1 - regimeTradeCut));
+        }
+
+        const tradeList = [];
+        strats.forEach((s, i) => {
+          if (!s.en) return;
+          for (let j = 0; j < tradesByStrat[i]; j++) tradeList.push({type:'std', s});
+        });
+        for (let j = 0; j < aPlusTrades; j++) tradeList.push({type:'aplus', s:aPlus});
+
+        for (let i = tradeList.length - 1; i > 0; i--) {
+          const j = Math.floor(rng() * (i + 1));
+          [tradeList[i], tradeList[j]] = [tradeList[j], tradeList[i]];
+        }
+
+        const tradesPerDay = distributeAcrossDays(tradeList.length, tradingDays);
+        let cursor = 0;
+        let weekR = 0, weekDayCount = 0;
+
+        for (let d = 0; d < tradingDays; d++) {
+          let dayR = 0;
+          const todayCount = tradesPerDay[d];
+          const dayRegimeRoll = rng();
+
+          for (let k = 0; k < todayCount; k++) {
+            if (cursor >= tradeList.length) break;
+            const trade = tradeList[cursor++];
+            if (dailyCapR > 0 && dayR <= -dailyCapR) continue;
+            if (weeklyCapR > 0 && weekR <= -weeklyCapR) continue;
+
+            const s = trade.s;
+            const riskBase = sizingMode === 'trade' ? bal : monthStartBal;
+            const riskAmt = Math.max(0, riskBase) * s.risk;
+
+            let effWR = s.win;
+            if (isBadWR) effWR = Math.min(effWR, 0.48);
+            if (isWorst) effWR = effWR * 0.7;
+            if (isBadRegime) effWR = Math.max(0, effWR - regimeWRCut);
+
+            let isWin;
+            if (forcedLossesRemaining > 0) {
+              isWin = false;
+              forcedLossesRemaining--;
+            } else if (corr > 0) {
+              const goodDay = dayRegimeRoll < effWR;
+              const indep = rng() < effWR;
+              isWin = (rng() < corr) ? goodDay : indep;
+            } else {
+              isWin = rng() < effWR;
+            }
+
+            if (isWin) {
+              const pnl = riskAmt * s.rr;
+              bal += pnl; YTDpnl += pnl;
+              dayR += s.rr; weekR += s.rr;
+              monthWins++;
+            } else {
+              bal -= riskAmt; YTDpnl -= riskAmt;
+              dayR -= 1; weekR -= 1;
+            }
+            monthTrades++;
+
+            if (bal > peak) peak = bal;
+            if (peak > 0) {
+              const ddPct = (peak - bal) / peak;
+              if (ddPct > maxDDPct) maxDDPct = ddPct;
+            }
+            if (bal <= 0) { bal = 0; break; }
+          }
+          weekDayCount++;
+          if (weekDayCount >= 5) { weekDayCount = 0; weekR = 0; }
+          if (bal <= 0) break;
+        }
       }
-    } else if(currencyInputs.includes(i.id)) {
+
+      // Capture pure-trading P&L for this month BEFORE tax/withdrawal
+      const postTradeBal = bal;
+      const monthPnLDollar = postTradeBal - monthStartBal;
+      const monthPnLPct = monthStartBal > 0 ? monthPnLDollar / monthStartBal : 0;
+
+      if (monthTrades > 0) {
+        allMonthlyWR.push(monthWins / monthTrades);
+        allMonthlyPnLPct.push(monthPnLPct);
+        allMonthlyPnLDollar.push(monthPnLDollar);
+        totalMonthsRecorded++;
+        if (monthWins / monthTrades < 0.55) totalMonthsBelow55WR++;
+      }
+      if (monthPnLPct < 0) {
+        losingMonthsThisRun++;
+        if (monthPnLDollar < runWorstMonthDollar) {
+          runWorstMonthDollar = monthPnLDollar;
+          runWorstMonthPct = monthPnLPct;
+        }
+      }
+
+      // Tax
+      if (m % 12 === 0 || m === simulationMonths) {
+        if (YTDpnl > 0) bal -= YTDpnl * taxR;
+        YTDpnl = 0;
+      }
+
+      // Withdrawals
+      const wd = (m > noWithdrawMonths) ? (w[Math.min(yearIdx, 4)] || 0) : 0;
+      bal -= wd;
+      if (bal < 0) bal = 0;
+
+      path.push(bal);
+    }
+
+    allEquity.push(path);
+    allMaxDDPct.push(maxDDPct);
+    allFinalBal.push(bal);
+    allLosingMonthsCount.push(losingMonthsThisRun);
+    allRegimeMonthsCount.push(regimeMonthsThisRun);
+    allRunWorstMonthDollar.push(runWorstMonthDollar);
+    allRunWorstMonthPct.push(runWorstMonthPct);
+    if (bal <= 0) blowups++;
+    if (bal >= targetN) aboveTarget++;
+  }
+
+  const labels = Array.from({length:simulationMonths}, (_,i)=>i+1);
+  const perMonth = labels.map((_, i) => {
+    const slice = allEquity.map(p => p[i] || 0).sort((a,b)=>a-b);
+    return {
+      p10: percentile(slice, 0.10),
+      p25: percentile(slice, 0.25),
+      p50: percentile(slice, 0.50),
+      p75: percentile(slice, 0.75),
+      p90: percentile(slice, 0.90),
+    };
+  });
+
+  // Final balance percentiles
+  const sortedFinal = [...allFinalBal].sort((a,b)=>a-b);
+  const finalP10 = percentile(sortedFinal, 0.10);
+  const finalP25 = percentile(sortedFinal, 0.25);
+  const finalP50 = percentile(sortedFinal, 0.50);
+  const finalP75 = percentile(sortedFinal, 0.75);
+  const finalP90 = percentile(sortedFinal, 0.90);
+
+  // Worst-5% sample run path
+  const indexedRuns = allFinalBal.map((b, i) => ({bal: b, idx: i})).sort((a,b)=>a.bal-b.bal);
+  const worst5Idx = indexedRuns[Math.floor(indexedRuns.length * 0.05)].idx;
+  const worst5Path = allEquity[worst5Idx];
+
+  // Drawdown stats
+  const sortedDD = [...allMaxDDPct].sort((a,b)=>a-b);
+  const ddMedian = percentile(sortedDD, 0.50);
+  const ddP90 = percentile(sortedDD, 0.90);
+  const ddP95 = percentile(sortedDD, 0.95);
+
+  // Losing month stats
+  const sortedLosing = [...allLosingMonthsCount].sort((a,b)=>a-b);
+  const losingMedian = percentile(sortedLosing, 0.50);
+  const losingP90 = percentile(sortedLosing, 0.90);
+
+  // Regime months stats
+  const sortedRegime = [...allRegimeMonthsCount].sort((a,b)=>a-b);
+  const regimeMedian = percentile(sortedRegime, 0.50);
+
+  // Worst month stats
+  const sortedWorstMonth = [...allRunWorstMonthDollar].sort((a,b)=>a-b);
+  const sortedWorstMonthPct = [...allRunWorstMonthPct].sort((a,b)=>a-b);
+  const overallWorstMonth = sortedWorstMonth[0]; // most negative
+  const overallWorstMonthPct = sortedWorstMonthPct[0];
+  const medianWorstMonth = percentile(sortedWorstMonth, 0.50);
+  const medianWorstMonthPct = percentile(sortedWorstMonthPct, 0.50);
+
+  // Probabilities
+  const probLevels = [200000, 300000, 400000, 500000, 750000, 1000000];
+  const probHit = probLevels.map(t => sortedFinal.filter(b => b >= t).length / sortedFinal.length);
+
+  const blowupPct = blowups / runsN * 100;
+  const aboveTargetPct = aboveTarget / runsN * 100;
+  const monthsBelow55Pct = totalMonthsRecorded > 0 ? (totalMonthsBelow55WR / totalMonthsRecorded * 100) : 0;
+  const losingMonthsPct = allMonthlyPnLPct.filter(p => p < 0).length / allMonthlyPnLPct.length * 100;
+  const cls = (val, good, bad) => val >= good ? 'good' : (val <= bad ? 'bad' : 'warn');
+
+  document.getElementById('summary').innerHTML = `
+    <div style="margin-bottom:6px">
+      <span class="big">${fmt(finalP50)}</span>
+      <small>median ending balance · ${runsN.toLocaleString()} runs · seed ${seed} · ${simulationMonths} months${regimeOn ? ' · regime coupling ON' : ' · regime coupling OFF'}</small>
+    </div>
+    <div>
+      <span class="stat"><span class="lbl">≥ Target ${fmt(targetN)} at end</span><span class="val ${cls(aboveTargetPct,50,20)}">${aboveTargetPct.toFixed(1)}%</span></span>
+      <span class="stat"><span class="lbl">Blowup (≤$0)</span><span class="val ${blowupPct >= 5 ? 'bad' : (blowupPct >= 1 ? 'warn' : 'good')}">${blowupPct.toFixed(2)}%</span></span>
+      <span class="stat"><span class="lbl">Median Max DD</span><span class="val warn">${(ddMedian*100).toFixed(1)}%</span></span>
+      <span class="stat"><span class="lbl">P90 Max DD</span><span class="val bad">${(ddP90*100).toFixed(1)}%</span></span>
+      <span class="stat"><span class="lbl">P95 Max DD</span><span class="val bad">${(ddP95*100).toFixed(1)}%</span></span>
+    </div>
+    <div style="margin-top:6px">
+      <span class="stat"><span class="lbl">Losing months / run (median)</span><span class="val warn">${losingMedian.toFixed(1)}</span></span>
+      <span class="stat"><span class="lbl">Losing months / run (p90)</span><span class="val bad">${losingP90.toFixed(1)}</span></span>
+      <span class="stat"><span class="lbl">% of all months that lost</span><span class="val warn">${losingMonthsPct.toFixed(1)}%</span></span>
+      ${regimeOn ? `<span class="stat"><span class="lbl">Bad regime months / run (median)</span><span class="val">${regimeMedian.toFixed(1)}</span></span>` : ''}
+      <span class="stat"><span class="lbl">Months &lt; 55% WR</span><span class="val">${monthsBelow55Pct.toFixed(1)}%</span></span>
+    </div>
+    <div style="margin-top:6px">
+      <span class="stat"><span class="lbl">Worst month observed (anywhere)</span><span class="val bad">${fmtSigned(overallWorstMonth)} (${(overallWorstMonthPct*100).toFixed(1)}%)</span></span>
+      <span class="stat"><span class="lbl">Typical run's worst month</span><span class="val warn">${fmtSigned(medianWorstMonth)} (${(medianWorstMonthPct*100).toFixed(1)}%)</span></span>
+    </div>
+    <div style="margin-top:8px">
+      <strong>Final balance:</strong>
+      p10 ${fmt(finalP10)} · p25 ${fmt(finalP25)} · <strong>p50 ${fmt(finalP50)}</strong> · p75 ${fmt(finalP75)} · p90 ${fmt(finalP90)}
+    </div>
+    <div style="margin-top:6px">
+      <strong>Probability of ending at:</strong>
+      ${probLevels.map((t,i)=>`${fmt(t)}: <strong>${(probHit[i]*100).toFixed(1)}%</strong>`).join(' · ')}
+    </div>
+  `;
+
+  // Year-end milestones
+  const milestonesEl = document.getElementById('milestones');
+  milestonesEl.innerHTML = '<div class="header-label">Year-End Milestones (across all runs)</div>';
+  const numYears = Math.ceil(simulationMonths / 12);
+  for (let yr = 1; yr <= numYears; yr++) {
+    const monthIdx = Math.min(simulationMonths, yr * 12) - 1;
+    const slice = allEquity.map(p => p[monthIdx] || 0).sort((a,b)=>a-b);
+    const p10 = percentile(slice, 0.10);
+    const p25 = percentile(slice, 0.25);
+    const p50 = percentile(slice, 0.50);
+    const p75 = percentile(slice, 0.75);
+    const p90 = percentile(slice, 0.90);
+    const hitTarget = slice.filter(b => b >= targetN).length / slice.length * 100;
+    const blewUp = slice.filter(b => b <= 0).length / slice.length * 100;
+    const labelMonth = Math.min(simulationMonths, yr * 12);
+    const card = document.createElement('div');
+    card.className = 'milestone-card';
+    card.innerHTML = `
+      <h4>End of Year ${yr} (Month ${labelMonth})</h4>
+      <div class="median">${fmt(p50)}</div>
+      <div class="row"><span class="lbl">p10 (worst 10%)</span><span>${fmt(p10)}</span></div>
+      <div class="row"><span class="lbl">p25</span><span>${fmt(p25)}</span></div>
+      <div class="row"><span class="lbl">p75</span><span>${fmt(p75)}</span></div>
+      <div class="row"><span class="lbl">p90 (best 10%)</span><span>${fmt(p90)}</span></div>
+      <div class="target-pct">
+        ≥ ${fmt(targetN)}: <strong style="color:${hitTarget>=50?'#3fb950':hitTarget>=20?'#f0883e':'#f85149'}">${hitTarget.toFixed(1)}%</strong>
+        ${blewUp > 0 ? ` · Blowup: <strong style="color:#f85149">${blewUp.toFixed(1)}%</strong>` : ''}
+      </div>
+    `;
+    milestonesEl.appendChild(card);
+  }
+  milestonesEl.style.display = 'grid';
+
+  // Equity chart with worst-5% overlay
+  if (equityChart) equityChart.destroy();
+  equityChart = new Chart(document.getElementById('equityChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {data: perMonth.map(m=>m.p10), borderColor:'rgba(63,185,80,0.25)', borderWidth:1, fill:false, pointRadius:0, label:'p10', tension:0.2},
+        {data: perMonth.map(m=>m.p90), borderColor:'rgba(63,185,80,0.25)', backgroundColor:'rgba(63,185,80,0.10)', borderWidth:1, fill:'-1', pointRadius:0, label:'p10–p90', tension:0.2},
+        {data: perMonth.map(m=>m.p25), borderColor:'rgba(63,185,80,0.4)', borderWidth:1, fill:false, pointRadius:0, label:'p25', tension:0.2},
+        {data: perMonth.map(m=>m.p75), borderColor:'rgba(63,185,80,0.4)', backgroundColor:'rgba(63,185,80,0.20)', borderWidth:1, fill:'-1', pointRadius:0, label:'p25–p75', tension:0.2},
+        {data: perMonth.map(m=>m.p50), borderColor:'#3fb950', borderWidth:2.5, fill:false, pointRadius:0, label:'Median', tension:0.2},
+        {data: worst5Path, borderColor:'#f85149', borderWidth:1.5, borderDash:[4,3], fill:false, pointRadius:0, label:'Worst 5% sample run', tension:0.05},
+        {data: labels.map(()=>targetN), borderColor:'#f0883e', borderWidth:1, borderDash:[5,5], pointRadius:0, fill:false, label:'Target'},
+        {data: labels.map(()=>startVal), borderColor:'#8b949e', borderWidth:1, borderDash:[3,3], pointRadius:0, fill:false, label:'Start'},
+      ]
+    },
+    options: {
+      plugins: {
+        legend: {labels: {color:'#e6edf3', filter: it => ['Median','p25–p75','p10–p90','Worst 5% sample run','Target','Start'].includes(it.text)}}
+      },
+      scales: {
+        y: {ticks: {color:'#8b949e', callback: v => fmt(v)}, grid:{color:'#30363d'}},
+        x: {ticks: {color:'#8b949e'}, grid:{color:'#30363d'}, title:{display:true, text:'Month', color:'#8b949e'}}
+      }
+    },
+    plugins: [yearLinesPlugin]
+  });
+
+  // Monthly P&L histogram
+  if (pnlChart) pnlChart.destroy();
+  // Buckets: ±25% in 1% increments (51 buckets centered on 0)
+  const pnlPctValues = allMonthlyPnLPct.map(p => p * 100);
+  const pnlMin = Math.min(-2, Math.floor(Math.min(...pnlPctValues)));
+  const pnlMax = Math.max(2, Math.ceil(Math.max(...pnlPctValues)));
+  const pnlBucketSize = 1; // 1%
+  const pnlNumBuckets = Math.ceil((pnlMax - pnlMin) / pnlBucketSize) + 1;
+  const pnlBuckets = Array(pnlNumBuckets).fill(0);
+  pnlPctValues.forEach(p => {
+    const idx = Math.min(pnlNumBuckets - 1, Math.max(0, Math.floor((p - pnlMin) / pnlBucketSize)));
+    pnlBuckets[idx]++;
+  });
+  const pnlLabels = Array.from({length:pnlNumBuckets}, (_,i) => `${(pnlMin + i*pnlBucketSize).toFixed(0)}%`);
+  const pnlColors = pnlLabels.map(lbl => {
+    const v = parseFloat(lbl);
+    if (v < -0.5) return '#f85149';
+    if (v > 0.5) return '#3fb950';
+    return '#f0883e';
+  });
+  pnlChart = new Chart(document.getElementById('pnlChart'), {
+    type: 'bar',
+    data: {labels: pnlLabels, datasets: [{data: pnlBuckets, backgroundColor: pnlColors, borderWidth: 0}]},
+    options: {
+      plugins: {
+        legend: {display: false},
+        tooltip: {callbacks: {title: items => 'Bucket: ' + items[0].label, label: i => i.parsed.y.toLocaleString() + ' months'}}
+      },
+      scales: {
+        y: {ticks: {color:'#8b949e'}, grid:{color:'#30363d'}, title:{display:true, text:'# months across all runs', color:'#8b949e'}},
+        x: {ticks: {color:'#8b949e', maxRotation:60, autoSkip:true, autoSkipPadding:6}, grid:{display:false}, title:{display:true, text:'Monthly P&L %', color:'#8b949e'}}
+      }
+    }
+  });
+
+  // Final balance histogram
+  if (histChart) histChart.destroy();
+  const numBuckets = 30;
+  const minB = sortedFinal[0];
+  const maxB = sortedFinal[sortedFinal.length - 1];
+  const bucketSize = ((maxB - minB) / numBuckets) || 1;
+  const buckets = Array(numBuckets).fill(0);
+  const bucketColors = Array(numBuckets).fill('#3fb950');
+  sortedFinal.forEach(b => {
+    const idx = Math.min(numBuckets - 1, Math.max(0, Math.floor((b - minB) / bucketSize)));
+    buckets[idx]++;
+  });
+  const histLabels = Array.from({length:numBuckets},(_,i) => fmt(Math.round(minB + i*bucketSize)));
+  const targetBucket = Math.min(numBuckets - 1, Math.max(0, Math.floor((targetN - minB) / bucketSize)));
+  for (let i = 0; i < numBuckets; i++) {
+    if (i < targetBucket) bucketColors[i] = '#f85149';
+    else if (i === targetBucket) bucketColors[i] = '#f0883e';
+    else bucketColors[i] = '#3fb950';
+  }
+  histChart = new Chart(document.getElementById('histChart'), {
+    type: 'bar',
+    data: {labels: histLabels, datasets: [{data: buckets, backgroundColor: bucketColors, borderWidth: 0}]},
+    options: {
+      plugins: {
+        legend: {display: false},
+        tooltip: {callbacks: {title: items => 'Bucket: ' + items[0].label, label: i => i.parsed.y + ' runs'}}
+      },
+      scales: {
+        y: {ticks: {color:'#8b949e'}, grid:{color:'#30363d'}, title:{display:true, text:'# runs', color:'#8b949e'}},
+        x: {ticks: {color:'#8b949e', maxRotation:60, autoSkip:true, autoSkipPadding:8}, grid:{display:false}}
+      }
+    }
+  });
+
+  // WR distribution
+  if (wrChart) wrChart.destroy();
+  const wrBuckets = Array(20).fill(0);
+  allMonthlyWR.forEach(wr => {
+    const idx = Math.min(19, Math.max(0, Math.floor(wr * 20)));
+    wrBuckets[idx]++;
+  });
+  const wrLabels = Array.from({length:20}, (_,i) => `${i*5}-${(i+1)*5}%`);
+  const targetWR = vn('win') / 100;
+  const wrColors = Array.from({length:20}, (_,i) => {
+    const lo = i*0.05;
+    if (targetWR >= lo && targetWR < lo + 0.05) return '#3fb950';
+    if (lo < 0.55) return '#f85149aa';
+    return '#58a6ff88';
+  });
+  wrChart = new Chart(document.getElementById('wrChart'), {
+    type: 'bar',
+    data: {labels: wrLabels, datasets: [{data: wrBuckets, backgroundColor: wrColors, borderWidth: 0}]},
+    options: {
+      plugins: {
+        legend: {display: false},
+        tooltip: {callbacks: {label: i => i.parsed.y.toLocaleString() + ' months'}}
+      },
+      scales: {
+        y: {ticks: {color:'#8b949e'}, grid:{color:'#30363d'}, title:{display:true, text:'# months across all runs', color:'#8b949e'}},
+        x: {ticks: {color:'#8b949e', maxRotation:60, autoSkip:true, autoSkipPadding:6}, grid:{display:false}, title:{display:true, text:'Realized monthly win rate', color:'#8b949e'}}
+      }
+    }
+  });
+
+  // Per-month percentile table
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = perMonth.map((m, i) => {
+    const yearIdx = Math.ceil((i+1)/12) - 1;
+    const wd = ((i+1) > noWithdrawMonths) ? (w[Math.min(yearIdx, 4)] || 0) : 0;
+    return `<tr><td>${i+1}</td><td>${fmt(m.p10)}</td><td>${fmt(m.p25)}</td><td><strong>${fmt(m.p50)}</strong></td><td>${fmt(m.p75)}</td><td>${fmt(m.p90)}</td><td>${fmt(wd)}</td></tr>`;
+  }).join('');
+}
+
+const currencyInputs = ['start','target','w1','w2','w3','w4','w5'];
+function saveInputs() {
+  document.querySelectorAll('input,select').forEach(i=>{
+    let val;
+    if (currencyInputs.includes(i.id)) val = parseCurrency(i.value);
+    else if (i.type === 'checkbox') val = i.checked;
+    else val = i.value;
+    localStorage.setItem('sim5_'+i.id, val);
+  });
+  document.getElementById('summary').innerText = 'Inputs saved.';
+}
+function loadInputs() {
+  document.querySelectorAll('input,select').forEach(i=>{
+    const stored = localStorage.getItem('sim5_'+i.id);
+    if (stored !== null) {
+      if (i.type === 'checkbox') i.checked = stored === 'true';
+      else if (currencyInputs.includes(i.id)) i.value = formatCurrency(stored);
+      else i.value = stored;
+    } else if (currencyInputs.includes(i.id)) {
       i.value = formatCurrency(i.value);
     }
   });
-  
+}
+
+window.onload = () => {
+  loadInputs();
   currencyInputs.forEach(id => {
     const input = document.getElementById(id);
-    
-    input.addEventListener('input', (e) => {
+    input.addEventListener('input', e => {
       const cursorPos = e.target.selectionStart;
-      const oldLength = e.target.value.length;
+      const oldLen = e.target.value.length;
       e.target.value = formatCurrency(e.target.value);
-      const newLength = e.target.value.length;
-      const diff = newLength - oldLength;
-      e.target.setSelectionRange(cursorPos + diff, cursorPos + diff);
+      const newLen = e.target.value.length;
+      e.target.setSelectionRange(cursorPos + (newLen - oldLen), cursorPos + (newLen - oldLen));
     });
-    
-    input.addEventListener('blur', (e) => {
-      e.target.value = formatCurrency(e.target.value);
-    });
+    input.addEventListener('blur', e => e.target.value = formatCurrency(e.target.value));
   });
+  document.querySelectorAll('input,select').forEach(i => {
+    i.addEventListener('input', calcLiveExpectancy);
+    i.addEventListener('change', calcLiveExpectancy);
+  });
+  calcLiveExpectancy();
 };
+document.getElementById('previewBtn').onclick = runSimulation;
+document.getElementById('saveBtn').onclick = saveInputs;
 </script>
 </body>
 </html>
