@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Position Size Calculator v2</title>
+<title>Position Size Calculator v4</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#0d1117; color:#c9d1d9; padding:20px; line-height:1.6; }
@@ -41,6 +41,8 @@ h1 { text-align:center; margin-bottom:8px; color:#58a6ff; font-size:2em; }
 .broker-toggle-small { display:flex; gap:0; background:#0d1117; border-radius:6px; padding:3px; border:1px solid #30363d; }
 .broker-btn-small { padding:5px 14px; background:transparent; border:none; color:#8b949e; cursor:pointer; font-size:.82em; border-radius:4px; transition:all .3s; }
 .broker-btn-small.active { background:#238636; color:white; }
+.clear-btn { padding:5px 14px; background:#3a1c1c; color:#f85149; border:1px solid #f8514955; border-radius:6px; cursor:pointer; font-size:.82em; transition:all .3s; font-weight:600; }
+.clear-btn:hover { background:#f85149; color:white; }
 .calculator-body { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 .card { background:#0d1117; border:1px solid #30363d; border-radius:8px; padding:14px; }
 .card h4 { color:#58a6ff; margin-bottom:12px; font-size:.95em; border-bottom:1px solid #30363d; padding-bottom:6px; }
@@ -73,13 +75,15 @@ input:focus, select:focus { outline:none; border-color:#58a6ff; }
 .sanity-pane.bad .h { color:#f85149; }
 .fx-rate-row { display:none; }
 .fx-rate-row.show { display:block; }
+.fx-rate-help { font-size:.7em; color:#8b949e; margin-top:3px; font-style:italic; }
+.fx-rate-help.cross { color:#f0ad4e; }
 @media (max-width:1200px) { .calculator-body { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <div class="container">
 <h1>Position Size Calculator</h1>
-<div class="version">v2 — fixed FX pip values, added notional/leverage/account-% sanity checks</div>
+<div class="version">v4 — added CHF/JPY + NZD/CAD, prices persist on instrument change, per-trade Clear button</div>
 
 <div class="global-risk">
   <div class="field">
@@ -116,15 +120,10 @@ input:focus, select:focus { outline:none; border-color:#58a6ff; }
 
 <script>
 // =============================================================================
-// INSTRUMENT DEFINITIONS — all FX SPOT pip values are now PER UNIT (will scale by lot size)
-// All futures have fixed contract sizes baked in
+// INSTRUMENT DEFINITIONS
+// FX spot: pip values computed dynamically from lot size
+// FX cross pairs (no USD on either side): require explicit USD/quote rate input
 // =============================================================================
-// For FX spot: tickValuePerUnit = pip value per 1 unit of base currency (USD)
-//   - USD-quote pairs (EURUSD, GBPUSD, AUDUSD, NZDUSD): 0.0001 USD per unit (1 pip × 0.0001)
-//   - USD-base pairs (USDCAD, USDCHF): 0.0001 quote currency per unit, needs FX conversion
-//   - USDJPY: 0.01 JPY per unit, needs FX conversion (JPY tick is 0.01 not 0.0001)
-
-// Futures (NinjaTrader margins)
 var instrumentsNinja={
   // Index futures
   MES:{tickSize:0.25,tickValue:1.25,marginID:50,marginON:1166,isFutures:true,assetClass:'index'},
@@ -147,30 +146,31 @@ var instrumentsNinja={
   ZT:{tickSize:0.0078125,tickValue:15.625,marginID:500,marginON:1540,isFutures:true,assetClass:'rates'},
   ZN:{tickSize:0.015625,tickValue:15.625,marginID:500,marginON:2475,isFutures:true,assetClass:'rates'},
   ZB:{tickSize:0.03125,tickValue:31.25,marginID:1000,marginON:4620,isFutures:true,assetClass:'rates'},
-  // FX FUTURES (fixed contract sizes)
-  M6A:{tickSize:0.0001,tickValue:1.00,marginID:50,marginON:220,isFutures:true,assetClass:'fxfut',contractSize:10000,quote:'USD'},
-  A6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:2200,isFutures:true,assetClass:'fxfut',contractSize:100000,quote:'USD'},
-  M6E:{tickSize:0.0001,tickValue:1.25,marginID:50,marginON:292,isFutures:true,assetClass:'fxfut',contractSize:12500,quote:'USD'},
-  E6:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:2915,isFutures:true,assetClass:'fxfut',contractSize:125000,quote:'USD'},
-  M6B:{tickSize:0.0001,tickValue:0.625,marginID:50,marginON:308,isFutures:true,assetClass:'fxfut',contractSize:6250,quote:'USD'},
-  B6:{tickSize:0.0001,tickValue:6.25,marginID:500,marginON:3080,isFutures:true,assetClass:'fxfut',contractSize:62500,quote:'USD'},
-  MICD:{tickSize:0.0001,tickValue:1.00,marginID:50,marginON:152,isFutures:true,assetClass:'fxfut',contractSize:10000,quote:'CAD'},
-  C6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:1518,isFutures:true,assetClass:'fxfut',contractSize:100000,quote:'CAD'},
-  S6:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:4950,isFutures:true,assetClass:'fxfut',contractSize:125000,quote:'CHF'},
-  J6:{tickSize:0.0000005,tickValue:6.25,marginID:500,marginON:4092,isFutures:true,assetClass:'fxfut',contractSize:12500000,quote:'JPY'},
-  // FX SPOT — pip values are PER UNIT of base; calculator will scale by user's lot size
-  AUDUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
-  EURUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
-  GBPUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
-  NZDUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
-  USDCAD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,quote:'CAD',marginPctIntra:0.05,marginPctNight:0.05},
-  USDCHF:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,quote:'CHF',marginPctIntra:0.05,marginPctNight:0.05},
-  USDJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05},
-  EURJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05},
-  GBPJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05}
+  // FX FUTURES
+  M6A:{tickSize:0.0001,tickValue:1.00,marginID:50,marginON:220,isFutures:true,assetClass:'fxfut',contractSize:10000,base:'AUD',quote:'USD'},
+  A6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:2200,isFutures:true,assetClass:'fxfut',contractSize:100000,base:'AUD',quote:'USD'},
+  M6E:{tickSize:0.0001,tickValue:1.25,marginID:50,marginON:292,isFutures:true,assetClass:'fxfut',contractSize:12500,base:'EUR',quote:'USD'},
+  E6:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:2915,isFutures:true,assetClass:'fxfut',contractSize:125000,base:'EUR',quote:'USD'},
+  M6B:{tickSize:0.0001,tickValue:0.625,marginID:50,marginON:308,isFutures:true,assetClass:'fxfut',contractSize:6250,base:'GBP',quote:'USD'},
+  B6:{tickSize:0.0001,tickValue:6.25,marginID:500,marginON:3080,isFutures:true,assetClass:'fxfut',contractSize:62500,base:'GBP',quote:'USD'},
+  MICD:{tickSize:0.0001,tickValue:1.00,marginID:50,marginON:152,isFutures:true,assetClass:'fxfut',contractSize:10000,base:'CAD',quote:'USD'},
+  C6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:1518,isFutures:true,assetClass:'fxfut',contractSize:100000,base:'CAD',quote:'USD'},
+  S6:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:4950,isFutures:true,assetClass:'fxfut',contractSize:125000,base:'CHF',quote:'USD'},
+  J6:{tickSize:0.0000005,tickValue:6.25,marginID:500,marginON:4092,isFutures:true,assetClass:'fxfut',contractSize:12500000,base:'JPY',quote:'USD'},
+  // FX SPOT — base + quote tracked for cross-pair detection
+  AUDUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'AUD',quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
+  EURUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'EUR',quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
+  GBPUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'GBP',quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
+  NZDUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'NZD',quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
+  USDCAD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'USD',quote:'CAD',marginPctIntra:0.05,marginPctNight:0.05},
+  USDCHF:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'USD',quote:'CHF',marginPctIntra:0.05,marginPctNight:0.05},
+  USDJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,base:'USD',quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05},
+  EURJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,base:'EUR',quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05},
+  GBPJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,base:'GBP',quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05},
+  CHFJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,base:'CHF',quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05},
+  NZDCAD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'NZD',quote:'CAD',marginPctIntra:0.05,marginPctNight:0.05}
 };
 
-// TOS-specific overrides (futures use TOS overnight margins)
 var tosOverrides={
   MES:{marginID:2465,marginON:2465}, ES:{marginID:24650,marginON:24650},
   MNQ:{marginID:3692,marginON:3692}, NQ:{marginID:36918,marginON:36918},
@@ -225,16 +225,22 @@ var instrumentOptions = '<optgroup label="Index Futures">' +
   '<option value="ZN">ZN — 10Y Treasury Note</option>' +
   '<option value="ZB">ZB — 30Y Treasury Bond</option>' +
   '</optgroup>' +
-  '<optgroup label="FX Spot (lot-size selectable)">' +
+  '<optgroup label="FX Spot — USD-quote majors">' +
   '<option value="AUDUSD">AUD/USD spot</option>' +
   '<option value="EURUSD">EUR/USD spot</option>' +
   '<option value="GBPUSD">GBP/USD spot</option>' +
   '<option value="NZDUSD">NZD/USD spot</option>' +
+  '</optgroup>' +
+  '<optgroup label="FX Spot — USD-base inverted">' +
   '<option value="USDCAD">USD/CAD spot</option>' +
   '<option value="USDCHF">USD/CHF spot</option>' +
   '<option value="USDJPY">USD/JPY spot</option>' +
+  '</optgroup>' +
+  '<optgroup label="FX Spot — Crosses (require USD/quote rate)">' +
   '<option value="EURJPY">EUR/JPY spot</option>' +
   '<option value="GBPJPY">GBP/JPY spot</option>' +
+  '<option value="CHFJPY">CHF/JPY spot</option>' +
+  '<option value="NZDCAD">NZD/CAD spot</option>' +
   '</optgroup>' +
   '<optgroup label="FX Futures (fixed contract size)">' +
   '<option value="M6A">M6A — Micro AUD futures</option>' +
@@ -272,22 +278,22 @@ function saveState(i) {
     customLot: document.getElementById('customLot'+i) ? document.getElementById('customLot'+i).value : '',
     fxRate: document.getElementById('fxRate'+i) ? document.getElementById('fxRate'+i).value : ''
   };
-  localStorage.setItem('tradeV2_'+i, JSON.stringify(s));
+  localStorage.setItem('tradeV4_'+i, JSON.stringify(s));
 }
 function loadState(i) {
-  var s = localStorage.getItem('tradeV2_'+i);
+  var s = localStorage.getItem('tradeV4_'+i);
   if (s) { try { return JSON.parse(s); } catch(e) { return null; } }
   return null;
 }
 function saveGlobals() {
-  localStorage.setItem('acctSize', document.getElementById('acctSize').value);
-  localStorage.setItem('globalRiskV2', document.getElementById('globalRisk').value);
-  localStorage.setItem('targetPercentV2', document.getElementById('targetPercent').value);
+  localStorage.setItem('acctSizeV4', document.getElementById('acctSize').value);
+  localStorage.setItem('globalRiskV4', document.getElementById('globalRisk').value);
+  localStorage.setItem('targetPercentV4', document.getElementById('targetPercent').value);
 }
 function loadGlobals() {
-  var a = localStorage.getItem('acctSize'); if (a) document.getElementById('acctSize').value = a;
-  var r = localStorage.getItem('globalRiskV2'); if (r) document.getElementById('globalRisk').value = r;
-  var p = localStorage.getItem('targetPercentV2'); if (p) document.getElementById('targetPercent').value = p;
+  var a = localStorage.getItem('acctSizeV4'); if (a) document.getElementById('acctSize').value = a;
+  var r = localStorage.getItem('globalRiskV4'); if (r) document.getElementById('globalRisk').value = r;
+  var p = localStorage.getItem('targetPercentV4'); if (p) document.getElementById('targetPercent').value = p;
 }
 
 document.getElementById('acctSize').addEventListener('input', function() {
@@ -357,13 +363,33 @@ function createCalc(i) {
       var tp = parseFloat(document.getElementById('targetPercent').value) || 70;
       var acct = getAcctSize();
 
+      // Detect cross pair (no USD on either side)
+      var isCross = ins.assetClass === 'fxspot' && ins.base !== 'USD' && ins.quote !== 'USD';
+      var isUSDBase = ins.assetClass === 'fxspot' && ins.base === 'USD' && ins.quote !== 'USD';
+
       // Show/hide lot-size and FX-rate inputs based on instrument type
       var lotRow = document.getElementById('lotSizeRow'+i);
       var fxRateRow = document.getElementById('fxRateRow'+i);
+      var fxRateLabel = document.getElementById('fxRateLabel'+i);
+      var fxRateHelp = document.getElementById('fxRateHelp'+i);
       if (ins.assetClass === 'fxspot') {
         lotRow.style.display = '';
-        // Show FX rate input only for non-USD-quote pairs
-        fxRateRow.style.display = (ins.quote === 'USD') ? 'none' : '';
+        if (ins.quote === 'USD') {
+          fxRateRow.style.display = 'none';
+        } else {
+          fxRateRow.style.display = '';
+          if (isCross) {
+            fxRateLabel.textContent = 'Current USD/' + ins.quote + ' rate (REQUIRED for cross pair)';
+            fxRateHelp.textContent = 'Cross pair: enter the current USD/' + ins.quote + ' rate so pip value can be converted to USD. Entry price will NOT be used as fallback.';
+            fxRateHelp.className = 'fx-rate-help cross';
+            document.getElementById('fxRate'+i).placeholder = 'e.g., 150.00 for USD/JPY pairs';
+          } else {
+            fxRateLabel.textContent = 'Current USD/' + ins.quote + ' rate (optional)';
+            fxRateHelp.textContent = 'For USD-base pairs, the entry price IS the USD/' + ins.quote + ' rate. Leaving this blank uses entry as the rate.';
+            fxRateHelp.className = 'fx-rate-help';
+            document.getElementById('fxRate'+i).placeholder = 'leave blank to use entry price';
+          }
+        }
       } else {
         lotRow.style.display = 'none';
         fxRateRow.style.display = 'none';
@@ -373,7 +399,7 @@ function createCalc(i) {
       if (!en || !st || !li || !rpt) { this.clearResults(); return; }
 
       // === Compute pip/tick value per contract or lot ===
-      var tickSize, tickValue, marginID, marginON, contractSize, isSpotFX = false, lotSizeUsed = 0, lotLabel = '';
+      var tickSize, tickValue, marginID, marginON, contractSize, isSpotFX = false, lotSizeUsed = 0;
 
       if (ins.assetClass === 'fxspot') {
         isSpotFX = true;
@@ -384,35 +410,34 @@ function createCalc(i) {
           lotSizeUsed = parseFloat(lotChoice);
         }
         if (lotSizeUsed <= 0) { this.clearResults(); return; }
-        lotLabel = lotSizeUsed.toLocaleString() + ' units';
 
-        tickSize = ins.pipSize; // 0.0001 or 0.01 for JPY pairs
-        // pipValue per lot in USD
+        tickSize = ins.pipSize;
         if (ins.quote === 'USD') {
-          tickValue = lotSizeUsed * ins.pipSize; // e.g., 10000 × 0.0001 = $1
+          tickValue = lotSizeUsed * ins.pipSize; // 10000 × 0.0001 = $1
         } else {
-          // USD-base or cross pair: pip is in quote currency, convert to USD
-          // For USDxxx: 1 pip move on 1 unit of USD = pipSize quote currency = pipSize / FXrate USD
-          // For lotSizeUsed units of USD: pip value = lotSizeUsed × pipSize / FXrate USD
           var fxRate = parseFloat(document.getElementById('fxRate'+i).value) || 0;
           if (fxRate <= 0) {
-            // Fall back to entry price as approximation
-            fxRate = en;
+            if (isCross) {
+              // For crosses, must require explicit fxRate — don't fall back to entry
+              this.clearResults();
+              this.setSanity('bad', 'Missing USD/' + ins.quote + ' rate', 'Cross pair (' + ins.base + '/' + ins.quote + ') requires explicit USD/' + ins.quote + ' rate. Entry price is NOT a substitute. Enter the current rate above to compute pip value correctly.');
+              return;
+            } else {
+              // USD-base pair: entry = USD/quote rate is fine
+              fxRate = en;
+            }
           }
           tickValue = (lotSizeUsed * ins.pipSize) / fxRate;
         }
-        // Spot FX margin is % of notional
         var notional = lotSizeUsed * en;
         marginID = notional * ins.marginPctIntra;
         marginON = notional * ins.marginPctNight;
       } else {
-        // Futures
         tickSize = ins.tickSize;
         tickValue = ins.tickValue;
         marginID = ins.marginID;
         marginON = ins.marginON;
         contractSize = ins.contractSize || null;
-        lotLabel = '1 contract';
       }
 
       // === Compute points / ticks / risk per unit ===
@@ -421,16 +446,15 @@ function createCalc(i) {
       else { ptsS = st - en; ptsL = en - li; }
       if (ptsS <= 0 || ptsL <= 0) { this.clearResults(); return; }
 
-      // FP fix: round ticks to nearest integer
       var tksS = Math.round(ptsS / tickSize);
       var tksL = Math.round(ptsL / tickSize);
-      var rpc = tksS * tickValue;     // $ risk per contract/lot
-      var rwc = tksL * tickValue;     // $ reward per contract/lot
+      var rpc = tksS * tickValue;
+      var rwc = tksL * tickValue;
       var rr = rpc > 0 ? (rwc / rpc) : 0;
       var con = rpc > 0 ? Math.floor(rpt / rpc) : 0;
-      if (con < 1 && rpc > 0 && rpc <= rpt) con = 1; // at least 1 if budget covers
-      var tR = con * rpc;       // total $ risk
-      var tRw = con * rwc;      // total $ reward
+      if (con < 1 && rpc > 0 && rpc <= rpt) con = 1;
+      var tR = con * rpc;
+      var tRw = con * rwc;
       var totalMarginID = con * marginID;
       var totalMarginON = con * marginON;
       var notionalTotal = isSpotFX ? (con * lotSizeUsed * en) : (contractSize ? con * contractSize * en : null);
@@ -439,11 +463,10 @@ function createCalc(i) {
       if (this.direction === 'long') tgtP = en + (ptsL * tp / 100);
       else tgtP = en - (ptsL * tp / 100);
 
-      // Stop %, leverage
       var stopPct = (ptsS / en) * 100;
       var leverageImplied = (acct > 0 && tR > 0) ? (notionalTotal ? (notionalTotal / acct) : null) : null;
 
-      // === Render outputs ===
+      // === Render ===
       document.getElementById('points'+i).textContent = ptsS.toFixed(ins.assetClass === 'fxspot' && ins.pipSize === 0.0001 ? 5 : (ins.tickSize && ins.tickSize < 0.01 ? 5 : 4));
       document.getElementById('rrRatio'+i).textContent = rr.toFixed(2) + ':1';
       document.getElementById('ticksRisk'+i).textContent = tksS.toFixed(0);
@@ -458,7 +481,6 @@ function createCalc(i) {
       document.getElementById('marginIDPerContract'+i).textContent = perUnit;
       document.getElementById('marginONPerContract'+i).textContent = isSpotFX ? ('$' + (marginON).toFixed(0) + ' /' + lotSizeUsed.toLocaleString() + '-unit lot') : ('$' + marginON.toLocaleString() + ' /contract');
 
-      // Notional, leverage, account %
       document.getElementById('notional'+i).textContent = notionalTotal != null ? ('$' + Math.round(notionalTotal).toLocaleString()) : '—';
       document.getElementById('leverage'+i).textContent = (leverageImplied != null && leverageImplied > 0) ? (leverageImplied.toFixed(1) + 'x') : '—';
       document.getElementById('stopPct'+i).textContent = stopPct.toFixed(3) + '%';
@@ -467,39 +489,32 @@ function createCalc(i) {
       document.getElementById('marginIDPct'+i).textContent = idAcctPct.toFixed(1) + '%';
       document.getElementById('marginONPct'+i).textContent = onAcctPct.toFixed(1) + '%';
 
-      // Pip value display (the new sanity element)
       var pipDisplay;
       if (isSpotFX) {
         pipDisplay = '$' + tickValue.toFixed(4) + ' per pip per ' + lotSizeUsed.toLocaleString() + '-unit lot' +
-          (ins.quote !== 'USD' ? ' (using rate ' + (parseFloat(document.getElementById('fxRate'+i).value) || en) + ')' : '');
+          (ins.quote !== 'USD' ? ' (rate: ' + (parseFloat(document.getElementById('fxRate'+i).value) || en).toFixed(4) + ')' : '');
       } else {
-        pipDisplay = '$' + tickValue.toFixed(2) + ' per tick per contract';
+        pipDisplay = '$' + tickValue.toFixed(4) + ' per tick per contract';
       }
       document.getElementById('pipValueShown'+i).textContent = pipDisplay;
 
-      // === Sanity checks ===
-      var sanityEl = document.getElementById('sanity'+i);
+      // === Sanity ===
       var sanityClass = '', sanityH = 'Sanity OK', sanityMsg = '';
       var riskDelta = Math.abs(tR - rpt);
       var riskDeltaPct = rpt > 0 ? (riskDelta / rpt * 100) : 0;
       if (riskDeltaPct > 25) {
-        sanityClass = 'warn';
-        sanityH = 'Risk mismatch';
-        sanityMsg = 'Computed risk is ' + (tR < rpt ? 'BELOW' : 'ABOVE') + ' your $' + rpt.toLocaleString() + ' target by ' + riskDeltaPct.toFixed(0) + '%. Stop is too tight to size up to a full unit, or contract risk exceeds budget. Consider widening stop or reducing risk-per-trade input.';
+        sanityClass = 'warn'; sanityH = 'Risk mismatch';
+        sanityMsg = 'Computed risk is ' + (tR < rpt ? 'BELOW' : 'ABOVE') + ' your $' + rpt.toLocaleString() + ' target by ' + riskDeltaPct.toFixed(0) + '%. Stop is too tight to size up to a full unit, or contract risk exceeds budget.';
       }
       if (onAcctPct > 80) {
-        sanityClass = 'bad';
-        sanityH = 'Margin overload';
-        sanityMsg = 'Overnight margin alone is ' + onAcctPct.toFixed(0) + '% of account on this single trade. You will not have room for additional concurrent positions and may face margin calls if equity drops.';
+        sanityClass = 'bad'; sanityH = 'Margin overload';
+        sanityMsg = 'Overnight margin alone is ' + onAcctPct.toFixed(0) + '% of account on this single trade. No room for additional concurrent positions.';
       }
       if (leverageImplied != null && leverageImplied > 30) {
-        sanityClass = sanityClass || 'warn';
-        sanityH = 'High leverage';
-        sanityMsg = (sanityMsg ? sanityMsg + ' ' : '') + 'Implied leverage on this trade is ' + leverageImplied.toFixed(0) + 'x — tight stop relative to instrument volatility. Confirm stop is at a real structural level, not noise.';
+        sanityClass = sanityClass || 'warn'; sanityH = 'High leverage';
+        sanityMsg = (sanityMsg ? sanityMsg + ' ' : '') + 'Implied leverage is ' + leverageImplied.toFixed(0) + 'x — confirm stop is at a real structural level, not noise.';
       }
-      sanityEl.className = 'sanity-pane' + (sanityClass ? ' ' + sanityClass : '');
-      document.getElementById('sanityH'+i).textContent = sanityH;
-      document.getElementById('sanityMsg'+i).textContent = sanityMsg || 'Risk computed at $' + tR.toFixed(0) + ' (' + (acct > 0 ? (tR/acct*100).toFixed(2) : '0') + '% of account). Pip/tick value above checks out for the selected lot size. Margin is within acceptable range.';
+      this.setSanity(sanityClass, sanityH, sanityMsg || ('Risk computed at $' + tR.toFixed(0) + ' (' + (acct > 0 ? (tR/acct*100).toFixed(2) : '0') + '% of account).'));
 
       this.lastResult = {
         symbol: ik, contracts: con, marginID: totalMarginID, marginON: totalMarginON,
@@ -507,18 +522,29 @@ function createCalc(i) {
       };
       updateSummary();
     },
+    setSanity: function(cls, h, msg) {
+      var i = this.index;
+      document.getElementById('sanity'+i).className = 'sanity-pane' + (cls ? ' ' + cls : '');
+      document.getElementById('sanityH'+i).textContent = h;
+      document.getElementById('sanityMsg'+i).textContent = msg;
+    },
     clearDisplayOnly: function() {},
     clearResults: function() {
       ['points','rrRatio','ticksRisk','ticksReward','risk','reward','contracts','targetPct',
        'marginID','marginON','notional','leverage','stopPct','marginIDPct','marginONPct'].forEach(function(f){
-        var el = document.getElementById(f+i); if (el) el.textContent = '-';
-      });
-      document.getElementById('pipValueShown'+i).textContent = '-';
-      document.getElementById('sanity'+i).className = 'sanity-pane';
-      document.getElementById('sanityH'+i).textContent = 'Awaiting inputs';
-      document.getElementById('sanityMsg'+i).textContent = 'Enter entry, stop, target, and risk size to see sanity checks.';
+        var el = document.getElementById(f+this.index); if (el) el.textContent = '-';
+      }.bind(this));
+      var pv = document.getElementById('pipValueShown'+this.index); if (pv) pv.textContent = '-';
+      this.setSanity('', 'Awaiting inputs', 'Enter entry, stop, target, and risk size to see sanity checks.');
       this.lastResult = null;
       updateSummary();
+    },
+    clearPrices: function() {
+      document.getElementById('entryPrice'+this.index).value = '';
+      document.getElementById('stopPrice'+this.index).value = '';
+      document.getElementById('limitPrice'+this.index).value = '';
+      saveState(this.index);
+      this.calculate();
     }
   };
 }
@@ -526,7 +552,9 @@ function createCalc(i) {
 function buildHTML(i) {
   return '<div class="row-header">' +
     '<h3>Trade ' + i + '</h3>' +
-    '<div class="row-header-right"><div class="broker-toggle-small">' +
+    '<div class="row-header-right">' +
+    '<button class="clear-btn" id="clearBtn'+i+'">Clear Prices</button>' +
+    '<div class="broker-toggle-small">' +
     '<button class="broker-btn-small active" id="ninjaBtn'+i+'">Ninja</button>' +
     '<button class="broker-btn-small" id="tosBtn'+i+'">TOS</button>' +
     '</div></div></div>' +
@@ -545,8 +573,9 @@ function buildHTML(i) {
     '<input type="number" id="customLot'+i+'" placeholder="custom units" style="margin-top:4px;display:none">' +
     '</div>' +
     '<div class="input-group fx-rate-row" id="fxRateRow'+i+'" style="display:none">' +
-    '<label>Current FX Rate (for pip value calc on USD-base/cross pairs)</label>' +
-    '<input type="number" id="fxRate'+i+'" step="0.0001" placeholder="e.g., 150.00 for USDJPY">' +
+    '<label id="fxRateLabel'+i+'">Current FX Rate</label>' +
+    '<input type="number" id="fxRate'+i+'" step="0.0001" placeholder="leave blank to use entry">' +
+    '<div class="fx-rate-help" id="fxRateHelp'+i+'"></div>' +
     '</div>' +
     '<div class="input-group"><label>Direction</label>' +
     '<div class="toggle-group">' +
@@ -642,11 +671,13 @@ function renderCalcs() {
         document.getElementById('longBtn'+i).classList.remove('active');
         reorderPrices(i, 'short'); saveState(i); calc.calculate();
       });
+      // CHANGED in v4: prices PERSIST when changing instruments (no clearing)
       document.getElementById('instrument'+i).addEventListener('change', function() {
-        document.getElementById('entryPrice'+i).value = '';
-        document.getElementById('stopPrice'+i).value = '';
-        document.getElementById('limitPrice'+i).value = '';
         saveState(i); calc.calculate();
+      });
+      // NEW in v4: explicit Clear Prices button
+      document.getElementById('clearBtn'+i).addEventListener('click', function() {
+        calc.clearPrices();
       });
       document.getElementById('entryPrice'+i).addEventListener('input', function() { saveState(i); calc.calculate(); });
       document.getElementById('stopPrice'+i).addEventListener('input', function() { saveState(i); calc.calculate(); });
