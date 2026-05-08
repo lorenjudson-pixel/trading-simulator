@@ -3,13 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Position Size Calculator v4</title>
+<title>Position Size Calculator v5</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#0d1117; color:#c9d1d9; padding:20px; line-height:1.6; }
 .container { max-width:1600px; margin:0 auto; }
 h1 { text-align:center; margin-bottom:8px; color:#58a6ff; font-size:2em; }
 .version { text-align:center; color:#8b949e; font-size:.85em; margin-bottom:20px; }
+.banner { background:#1f1c0d; border:1px solid #f0ad4e; border-radius:8px; padding:12px 16px; margin-bottom:20px; font-size:.9em; line-height:1.5; }
+.banner strong { color:#f0ad4e; }
 .global-risk { background:#161b22; border:2px solid #30363d; border-radius:12px; padding:20px; margin-bottom:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; }
 .global-risk .field { text-align:center; }
 .global-risk label { display:block; color:#58a6ff; font-size:.95em; font-weight:600; margin-bottom:6px; }
@@ -73,17 +75,24 @@ input:focus, select:focus { outline:none; border-color:#58a6ff; }
 .sanity-pane .h { color:#3fb950; font-weight:600; text-transform:uppercase; letter-spacing:.5px; font-size:.75em; margin-bottom:5px; }
 .sanity-pane.warn .h { color:#f0ad4e; }
 .sanity-pane.bad .h { color:#f85149; }
-.fx-rate-row { display:none; }
-.fx-rate-row.show { display:block; }
 .fx-rate-help { font-size:.7em; color:#8b949e; margin-top:3px; font-style:italic; }
 .fx-rate-help.cross { color:#f0ad4e; }
+.override-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; padding:8px; background:#0d1117; border:1px dashed #f0ad4e44; border-radius:6px; }
+.override-row label { font-size:.75em; color:#f0ad4e; margin-bottom:3px; }
+.override-row input { padding:5px; font-size:.85em; background:#161b22; }
+.override-help { grid-column:1/-1; font-size:.68em; color:#8b949e; font-style:italic; margin-top:2px; }
+.using-override { color:#f0ad4e; font-style:italic; }
 @media (max-width:1200px) { .calculator-body { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <div class="container">
 <h1>Position Size Calculator</h1>
-<div class="version">v4 — added CHF/JPY + NZD/CAD, prices persist on instrument change, per-trade Clear button</div>
+<div class="version">v5 — per-trade margin override + corrected MCL/CL margins</div>
+
+<div class="banner">
+  <strong>Important about margin numbers:</strong> Broker margin requirements (especially Schwab/TOS) often differ significantly from CME minimums and change quarterly. The hardcoded TOS values in this calculator are best-effort estimates and have been verified for <strong>MCL ($3,200/contract overnight)</strong> and proportionally adjusted for <strong>CL ($32,000)</strong>. <strong>For every other instrument, verify against TOS BP Effect before sizing real trades.</strong> Use the per-trade <strong>Margin Override</strong> fields below — once you grab a real number for an instrument, fill it in and it'll persist per trade slot.
+</div>
 
 <div class="global-risk">
   <div class="field">
@@ -121,16 +130,15 @@ input:focus, select:focus { outline:none; border-color:#58a6ff; }
 <script>
 // =============================================================================
 // INSTRUMENT DEFINITIONS
-// FX spot: pip values computed dynamically from lot size
-// FX cross pairs (no USD on either side): require explicit USD/quote rate input
+// MCL margin VERIFIED at $3,200 (overnight) on Schwab/TOS via user trade BP Effect.
+// CL extrapolated at 10× MCL = $32,000.
+// All other TOS values are estimates — VERIFY in your account and use Margin Override.
 // =============================================================================
 var instrumentsNinja={
-  // Index futures
   MES:{tickSize:0.25,tickValue:1.25,marginID:50,marginON:1166,isFutures:true,assetClass:'index'},
   ES:{tickSize:0.25,tickValue:12.50,marginID:500,marginON:11660,isFutures:true,assetClass:'index'},
   MNQ:{tickSize:0.25,tickValue:0.50,marginID:100,marginON:1738,isFutures:true,assetClass:'index'},
   NQ:{tickSize:0.25,tickValue:5.00,marginID:1000,marginON:17380,isFutures:true,assetClass:'index'},
-  // Metals & energy
   MGC:{tickSize:0.10,tickValue:1.00,marginID:200,marginON:814,isFutures:true,assetClass:'commodity'},
   GC:{tickSize:0.10,tickValue:10.00,marginID:2000,marginON:8140,isFutures:true,assetClass:'commodity'},
   MCL:{tickSize:0.01,tickValue:1.00,marginID:100,marginON:726,isFutures:true,assetClass:'commodity'},
@@ -138,15 +146,12 @@ var instrumentsNinja={
   SIL:{tickSize:0.005,tickValue:5.00,marginID:440,marginON:4400,isFutures:true,assetClass:'commodity'},
   SI:{tickSize:0.005,tickValue:25.00,marginID:2200,marginON:22000,isFutures:true,assetClass:'commodity'},
   MBT:{tickSize:5,tickValue:0.50,marginID:200,marginON:2000,isFutures:true,assetClass:'crypto'},
-  // Grains
   ZC:{tickSize:0.0025,tickValue:12.50,marginID:250,marginON:2475,isFutures:true,assetClass:'grain'},
   ZW:{tickSize:0.0025,tickValue:12.50,marginID:200,marginON:2000,isFutures:true,assetClass:'grain'},
   ZS:{tickSize:0.0025,tickValue:12.50,marginID:250,marginON:2475,isFutures:true,assetClass:'grain'},
-  // Rates
   ZT:{tickSize:0.0078125,tickValue:15.625,marginID:500,marginON:1540,isFutures:true,assetClass:'rates'},
   ZN:{tickSize:0.015625,tickValue:15.625,marginID:500,marginON:2475,isFutures:true,assetClass:'rates'},
   ZB:{tickSize:0.03125,tickValue:31.25,marginID:1000,marginON:4620,isFutures:true,assetClass:'rates'},
-  // FX FUTURES
   M6A:{tickSize:0.0001,tickValue:1.00,marginID:50,marginON:220,isFutures:true,assetClass:'fxfut',contractSize:10000,base:'AUD',quote:'USD'},
   A6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:2200,isFutures:true,assetClass:'fxfut',contractSize:100000,base:'AUD',quote:'USD'},
   M6E:{tickSize:0.0001,tickValue:1.25,marginID:50,marginON:292,isFutures:true,assetClass:'fxfut',contractSize:12500,base:'EUR',quote:'USD'},
@@ -157,7 +162,8 @@ var instrumentsNinja={
   C6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:1518,isFutures:true,assetClass:'fxfut',contractSize:100000,base:'CAD',quote:'USD'},
   S6:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:4950,isFutures:true,assetClass:'fxfut',contractSize:125000,base:'CHF',quote:'USD'},
   J6:{tickSize:0.0000005,tickValue:6.25,marginID:500,marginON:4092,isFutures:true,assetClass:'fxfut',contractSize:12500000,base:'JPY',quote:'USD'},
-  // FX SPOT — base + quote tracked for cross-pair detection
+  N6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:2200,isFutures:true,assetClass:'fxfut',contractSize:100000,base:'NZD',quote:'USD'},
+  M6N:{tickSize:0.0001,tickValue:1.00,marginID:50,marginON:220,isFutures:true,assetClass:'fxfut',contractSize:10000,base:'NZD',quote:'USD'},
   AUDUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'AUD',quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
   EURUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'EUR',quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
   GBPUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'GBP',quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
@@ -171,11 +177,14 @@ var instrumentsNinja={
   NZDCAD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'NZD',quote:'CAD',marginPctIntra:0.05,marginPctNight:0.05}
 };
 
+// TOS overrides — note: many of these are estimates pending real-account verification.
+// MCL VERIFIED. CL scaled proportionally. Others to be confirmed by user.
 var tosOverrides={
   MES:{marginID:2465,marginON:2465}, ES:{marginID:24650,marginON:24650},
   MNQ:{marginID:3692,marginON:3692}, NQ:{marginID:36918,marginON:36918},
   MGC:{marginID:2618,marginON:2618}, GC:{marginID:25650,marginON:25650},
-  MCL:{marginID:457,marginON:457}, CL:{marginID:4754,marginON:4754},
+  MCL:{marginID:3200,marginON:3200},  // VERIFIED via BP Effect screenshot
+  CL:{marginID:32000,marginON:32000}, // 10× MCL (proportional to contract size)
   SIL:{marginID:4400,marginON:4400}, SI:{marginID:22000,marginON:22000},
   MBT:{marginID:2000,marginON:2000},
   ZC:{marginID:2475,marginON:2475}, ZW:{marginID:2000,marginON:2000}, ZS:{marginID:2475,marginON:2475},
@@ -184,8 +193,12 @@ var tosOverrides={
   M6E:{marginID:297,marginON:297}, E6:{marginID:2970,marginON:2970},
   M6B:{marginID:220,marginON:220}, B6:{marginID:2200,marginON:2200},
   MICD:{marginID:110,marginON:110}, C6:{marginID:1100,marginON:1100},
-  S6:{marginID:4950,marginON:4950}, J6:{marginID:3080,marginON:3080}
+  S6:{marginID:4950,marginON:4950}, J6:{marginID:3080,marginON:3080},
+  N6:{marginID:2200,marginON:2200}, M6N:{marginID:220,marginON:220}
 };
+
+// Verified instruments — used for sanity-pane confidence message
+var verifiedTOS = {MCL:true, CL:true};
 
 function getInstrument(key, broker) {
   var base = instrumentsNinja[key];
@@ -211,8 +224,8 @@ var instrumentOptions = '<optgroup label="Index Futures">' +
   '<option value="GC">GC — Gold</option>' +
   '<option value="SIL">SIL — Micro Silver</option>' +
   '<option value="SI">SI — Silver</option>' +
-  '<option value="MCL">MCL — Micro Crude Oil</option>' +
-  '<option value="CL">CL — Crude Oil</option>' +
+  '<option value="MCL">MCL — Micro Crude Oil ✓</option>' +
+  '<option value="CL">CL — Crude Oil ✓</option>' +
   '<option value="MBT">MBT — Micro Bitcoin</option>' +
   '</optgroup>' +
   '<optgroup label="Grains">' +
@@ -242,7 +255,7 @@ var instrumentOptions = '<optgroup label="Index Futures">' +
   '<option value="CHFJPY">CHF/JPY spot</option>' +
   '<option value="NZDCAD">NZD/CAD spot</option>' +
   '</optgroup>' +
-  '<optgroup label="FX Futures (fixed contract size)">' +
+  '<optgroup label="FX Futures">' +
   '<option value="M6A">M6A — Micro AUD futures</option>' +
   '<option value="A6">6A — AUD futures</option>' +
   '<option value="M6E">M6E — Micro EUR futures</option>' +
@@ -253,15 +266,14 @@ var instrumentOptions = '<optgroup label="Index Futures">' +
   '<option value="C6">6C — Canadian Dollar futures</option>' +
   '<option value="S6">6S — Swiss Franc futures</option>' +
   '<option value="J6">6J — Japanese Yen futures</option>' +
+  '<option value="M6N">M6N — Micro NZD/USD futures</option>' +
+  '<option value="N6">6N — NZD/USD futures</option>' +
   '</optgroup>';
 
-// Helpers
 function getAcctSize() { return parseFloat(document.getElementById('acctSize').value) || 0; }
 function getGlobalRisk() { return parseFloat(document.getElementById('globalRisk').value) || 0; }
-
 function updateRiskPctDisplay() {
-  var acct = getAcctSize();
-  var risk = getGlobalRisk();
+  var acct = getAcctSize(); var risk = getGlobalRisk();
   var pct = acct > 0 ? (risk / acct * 100) : 0;
   document.getElementById('globalRiskPct').value = pct.toFixed(2) + '%';
 }
@@ -276,24 +288,26 @@ function saveState(i) {
     limit: document.getElementById('limitPrice'+i).value,
     lotSize: document.getElementById('lotSize'+i) ? document.getElementById('lotSize'+i).value : '',
     customLot: document.getElementById('customLot'+i) ? document.getElementById('customLot'+i).value : '',
-    fxRate: document.getElementById('fxRate'+i) ? document.getElementById('fxRate'+i).value : ''
+    fxRate: document.getElementById('fxRate'+i) ? document.getElementById('fxRate'+i).value : '',
+    mIDOverride: document.getElementById('mIDOverride'+i) ? document.getElementById('mIDOverride'+i).value : '',
+    mONOverride: document.getElementById('mONOverride'+i) ? document.getElementById('mONOverride'+i).value : ''
   };
-  localStorage.setItem('tradeV4_'+i, JSON.stringify(s));
+  localStorage.setItem('tradeV5_'+i, JSON.stringify(s));
 }
 function loadState(i) {
-  var s = localStorage.getItem('tradeV4_'+i);
+  var s = localStorage.getItem('tradeV5_'+i);
   if (s) { try { return JSON.parse(s); } catch(e) { return null; } }
   return null;
 }
 function saveGlobals() {
-  localStorage.setItem('acctSizeV4', document.getElementById('acctSize').value);
-  localStorage.setItem('globalRiskV4', document.getElementById('globalRisk').value);
-  localStorage.setItem('targetPercentV4', document.getElementById('targetPercent').value);
+  localStorage.setItem('acctSizeV5', document.getElementById('acctSize').value);
+  localStorage.setItem('globalRiskV5', document.getElementById('globalRisk').value);
+  localStorage.setItem('targetPercentV5', document.getElementById('targetPercent').value);
 }
 function loadGlobals() {
-  var a = localStorage.getItem('acctSizeV4'); if (a) document.getElementById('acctSize').value = a;
-  var r = localStorage.getItem('globalRiskV4'); if (r) document.getElementById('globalRisk').value = r;
-  var p = localStorage.getItem('targetPercentV4'); if (p) document.getElementById('targetPercent').value = p;
+  var a = localStorage.getItem('acctSizeV5'); if (a) document.getElementById('acctSize').value = a;
+  var r = localStorage.getItem('globalRiskV5'); if (r) document.getElementById('globalRisk').value = r;
+  var p = localStorage.getItem('targetPercentV5'); if (p) document.getElementById('targetPercent').value = p;
 }
 
 document.getElementById('acctSize').addEventListener('input', function() {
@@ -309,13 +323,11 @@ document.getElementById('targetPercent').addEventListener('input', function() {
 function updateSummary() {
   var bd = {}, tID = 0, tON = 0;
   for (var x = 0; x < calculators.length; x++) {
-    var c = calculators[x];
-    var r = c.lastResult;
+    var c = calculators[x]; var r = c.lastResult;
     if (!r || !r.contracts || r.contracts === 0) continue;
-    var k = c.lastResult.symbol + ' (' + r.contracts + (r.isSpotFX ? ' lots' : '') + ')';
+    var k = c.lastResult.symbol + ' (' + r.contracts + (r.isSpotFX ? ' lots' : '') + ')' + (r.usingOverride ? ' †' : '');
     bd[k] = { id: r.marginID, on: r.marginON };
-    tID += r.marginID;
-    tON += r.marginON;
+    tID += r.marginID; tON += r.marginON;
   }
   var acct = getAcctSize();
   document.getElementById('summaryTotalID').textContent = '$' + Math.round(tID).toLocaleString();
@@ -333,7 +345,7 @@ function updateSummary() {
   if (ks.length === 0) {
     bdDiv.innerHTML = '<div class="no-trades">No active trades</div>';
   } else {
-    var h = '<table class="breakdown-table"><thead><tr><th>Instrument</th><th>Intraday $</th><th>Intraday %</th><th>Overnight $</th><th>Overnight %</th></tr></thead><tbody>';
+    var h = '<table class="breakdown-table"><thead><tr><th>Instrument († = override applied)</th><th>Intraday $</th><th>Intraday %</th><th>Overnight $</th><th>Overnight %</th></tr></thead><tbody>';
     for (var j = 0; j < ks.length; j++) {
       var idP = acct > 0 ? (bd[ks[j]].id / acct * 100) : 0;
       var onP = acct > 0 ? (bd[ks[j]].on / acct * 100) : 0;
@@ -363,11 +375,8 @@ function createCalc(i) {
       var tp = parseFloat(document.getElementById('targetPercent').value) || 70;
       var acct = getAcctSize();
 
-      // Detect cross pair (no USD on either side)
       var isCross = ins.assetClass === 'fxspot' && ins.base !== 'USD' && ins.quote !== 'USD';
-      var isUSDBase = ins.assetClass === 'fxspot' && ins.base === 'USD' && ins.quote !== 'USD';
 
-      // Show/hide lot-size and FX-rate inputs based on instrument type
       var lotRow = document.getElementById('lotSizeRow'+i);
       var fxRateRow = document.getElementById('fxRateRow'+i);
       var fxRateLabel = document.getElementById('fxRateLabel'+i);
@@ -380,12 +389,12 @@ function createCalc(i) {
           fxRateRow.style.display = '';
           if (isCross) {
             fxRateLabel.textContent = 'Current USD/' + ins.quote + ' rate (REQUIRED for cross pair)';
-            fxRateHelp.textContent = 'Cross pair: enter the current USD/' + ins.quote + ' rate so pip value can be converted to USD. Entry price will NOT be used as fallback.';
+            fxRateHelp.textContent = 'Cross pair: enter the current USD/' + ins.quote + ' rate so pip value can be converted to USD.';
             fxRateHelp.className = 'fx-rate-help cross';
             document.getElementById('fxRate'+i).placeholder = 'e.g., 150.00 for USD/JPY pairs';
           } else {
             fxRateLabel.textContent = 'Current USD/' + ins.quote + ' rate (optional)';
-            fxRateHelp.textContent = 'For USD-base pairs, the entry price IS the USD/' + ins.quote + ' rate. Leaving this blank uses entry as the rate.';
+            fxRateHelp.textContent = 'For USD-base pairs, the entry price IS the USD/' + ins.quote + ' rate.';
             fxRateHelp.className = 'fx-rate-help';
             document.getElementById('fxRate'+i).placeholder = 'leave blank to use entry price';
           }
@@ -398,7 +407,6 @@ function createCalc(i) {
       this.clearDisplayOnly();
       if (!en || !st || !li || !rpt) { this.clearResults(); return; }
 
-      // === Compute pip/tick value per contract or lot ===
       var tickSize, tickValue, marginID, marginON, contractSize, isSpotFX = false, lotSizeUsed = 0;
 
       if (ins.assetClass === 'fxspot') {
@@ -413,17 +421,15 @@ function createCalc(i) {
 
         tickSize = ins.pipSize;
         if (ins.quote === 'USD') {
-          tickValue = lotSizeUsed * ins.pipSize; // 10000 × 0.0001 = $1
+          tickValue = lotSizeUsed * ins.pipSize;
         } else {
           var fxRate = parseFloat(document.getElementById('fxRate'+i).value) || 0;
           if (fxRate <= 0) {
             if (isCross) {
-              // For crosses, must require explicit fxRate — don't fall back to entry
               this.clearResults();
-              this.setSanity('bad', 'Missing USD/' + ins.quote + ' rate', 'Cross pair (' + ins.base + '/' + ins.quote + ') requires explicit USD/' + ins.quote + ' rate. Entry price is NOT a substitute. Enter the current rate above to compute pip value correctly.');
+              this.setSanity('bad', 'Missing USD/' + ins.quote + ' rate', 'Cross pair (' + ins.base + '/' + ins.quote + ') requires explicit USD/' + ins.quote + ' rate.');
               return;
             } else {
-              // USD-base pair: entry = USD/quote rate is fine
               fxRate = en;
             }
           }
@@ -440,7 +446,15 @@ function createCalc(i) {
         contractSize = ins.contractSize || null;
       }
 
-      // === Compute points / ticks / risk per unit ===
+      // === Margin override (futures only) ===
+      var usingOverride = false;
+      var mIDOverrideVal = parseFloat(document.getElementById('mIDOverride'+i).value);
+      var mONOverrideVal = parseFloat(document.getElementById('mONOverride'+i).value);
+      if (!isSpotFX) {
+        if (!isNaN(mIDOverrideVal) && mIDOverrideVal > 0) { marginID = mIDOverrideVal; usingOverride = true; }
+        if (!isNaN(mONOverrideVal) && mONOverrideVal > 0) { marginON = mONOverrideVal; usingOverride = true; }
+      }
+
       var ptsS, ptsL;
       if (this.direction === 'long') { ptsS = en - st; ptsL = li - en; }
       else { ptsS = st - en; ptsL = en - li; }
@@ -466,7 +480,7 @@ function createCalc(i) {
       var stopPct = (ptsS / en) * 100;
       var leverageImplied = (acct > 0 && tR > 0) ? (notionalTotal ? (notionalTotal / acct) : null) : null;
 
-      // === Render ===
+      // Render
       document.getElementById('points'+i).textContent = ptsS.toFixed(ins.assetClass === 'fxspot' && ins.pipSize === 0.0001 ? 5 : (ins.tickSize && ins.tickSize < 0.01 ? 5 : 4));
       document.getElementById('rrRatio'+i).textContent = rr.toFixed(2) + ':1';
       document.getElementById('ticksRisk'+i).textContent = tksS.toFixed(0);
@@ -477,9 +491,14 @@ function createCalc(i) {
       document.getElementById('targetPct'+i).textContent = tgtP.toFixed(ik.indexOf('JPY') >= 0 ? 3 : (ins.tickSize && ins.tickSize < 0.001 ? 5 : 4));
       document.getElementById('marginID'+i).textContent = '$' + Math.round(totalMarginID).toLocaleString();
       document.getElementById('marginON'+i).textContent = '$' + Math.round(totalMarginON).toLocaleString();
-      var perUnit = isSpotFX ? ('$' + (marginID).toFixed(0) + ' /' + lotSizeUsed.toLocaleString() + '-unit lot') : ('$' + marginID.toLocaleString() + ' /contract');
-      document.getElementById('marginIDPerContract'+i).textContent = perUnit;
-      document.getElementById('marginONPerContract'+i).textContent = isSpotFX ? ('$' + (marginON).toFixed(0) + ' /' + lotSizeUsed.toLocaleString() + '-unit lot') : ('$' + marginON.toLocaleString() + ' /contract');
+      var perUnitID = isSpotFX
+        ? ('$' + (marginID).toFixed(0) + ' /' + lotSizeUsed.toLocaleString() + '-unit lot')
+        : ('$' + marginID.toLocaleString() + ' /contract' + (usingOverride ? ' (override)' : ''));
+      var perUnitON = isSpotFX
+        ? ('$' + (marginON).toFixed(0) + ' /' + lotSizeUsed.toLocaleString() + '-unit lot')
+        : ('$' + marginON.toLocaleString() + ' /contract' + (usingOverride ? ' (override)' : ''));
+      document.getElementById('marginIDPerContract'+i).textContent = perUnitID;
+      document.getElementById('marginONPerContract'+i).textContent = perUnitON;
 
       document.getElementById('notional'+i).textContent = notionalTotal != null ? ('$' + Math.round(notionalTotal).toLocaleString()) : '—';
       document.getElementById('leverage'+i).textContent = (leverageImplied != null && leverageImplied > 0) ? (leverageImplied.toFixed(1) + 'x') : '—';
@@ -498,27 +517,40 @@ function createCalc(i) {
       }
       document.getElementById('pipValueShown'+i).textContent = pipDisplay;
 
-      // === Sanity ===
+      // Sanity
       var sanityClass = '', sanityH = 'Sanity OK', sanityMsg = '';
       var riskDelta = Math.abs(tR - rpt);
       var riskDeltaPct = rpt > 0 ? (riskDelta / rpt * 100) : 0;
       if (riskDeltaPct > 25) {
         sanityClass = 'warn'; sanityH = 'Risk mismatch';
-        sanityMsg = 'Computed risk is ' + (tR < rpt ? 'BELOW' : 'ABOVE') + ' your $' + rpt.toLocaleString() + ' target by ' + riskDeltaPct.toFixed(0) + '%. Stop is too tight to size up to a full unit, or contract risk exceeds budget.';
+        sanityMsg = 'Computed risk is ' + (tR < rpt ? 'BELOW' : 'ABOVE') + ' your $' + rpt.toLocaleString() + ' target by ' + riskDeltaPct.toFixed(0) + '%.';
       }
       if (onAcctPct > 80) {
         sanityClass = 'bad'; sanityH = 'Margin overload';
-        sanityMsg = 'Overnight margin alone is ' + onAcctPct.toFixed(0) + '% of account on this single trade. No room for additional concurrent positions.';
+        sanityMsg = 'Overnight margin alone is ' + onAcctPct.toFixed(0) + '% of account on this single trade.';
       }
       if (leverageImplied != null && leverageImplied > 30) {
         sanityClass = sanityClass || 'warn'; sanityH = 'High leverage';
-        sanityMsg = (sanityMsg ? sanityMsg + ' ' : '') + 'Implied leverage is ' + leverageImplied.toFixed(0) + 'x — confirm stop is at a real structural level, not noise.';
+        sanityMsg = (sanityMsg ? sanityMsg + ' ' : '') + 'Implied leverage is ' + leverageImplied.toFixed(0) + 'x.';
       }
-      this.setSanity(sanityClass, sanityH, sanityMsg || ('Risk computed at $' + tR.toFixed(0) + ' (' + (acct > 0 ? (tR/acct*100).toFixed(2) : '0') + '% of account).'));
+      // Margin verification status
+      var marginVerifyMsg = '';
+      if (this.broker === 'tos' && !isSpotFX) {
+        if (usingOverride) {
+          marginVerifyMsg = ' Margin uses your custom override values.';
+        } else if (verifiedTOS[ik]) {
+          marginVerifyMsg = ' TOS margin VERIFIED for ' + ik + '.';
+        } else {
+          if (!sanityClass) sanityClass = 'warn';
+          if (sanityH === 'Sanity OK') sanityH = 'TOS margin not verified';
+          marginVerifyMsg = ' ⚠ TOS margin for ' + ik + ' is an estimate. Pull actual BP Effect from TOS for 1 contract and put it in the Margin Override fields.';
+        }
+      }
+      this.setSanity(sanityClass, sanityH, (sanityMsg || ('Risk computed at $' + tR.toFixed(0) + ' (' + (acct > 0 ? (tR/acct*100).toFixed(2) : '0') + '% of account).')) + marginVerifyMsg);
 
       this.lastResult = {
         symbol: ik, contracts: con, marginID: totalMarginID, marginON: totalMarginON,
-        isSpotFX: isSpotFX, notional: notionalTotal
+        isSpotFX: isSpotFX, notional: notionalTotal, usingOverride: usingOverride
       };
       updateSummary();
     },
@@ -572,10 +604,17 @@ function buildHTML(i) {
     '</select>' +
     '<input type="number" id="customLot'+i+'" placeholder="custom units" style="margin-top:4px;display:none">' +
     '</div>' +
-    '<div class="input-group fx-rate-row" id="fxRateRow'+i+'" style="display:none">' +
+    '<div class="input-group" id="fxRateRow'+i+'" style="display:none">' +
     '<label id="fxRateLabel'+i+'">Current FX Rate</label>' +
     '<input type="number" id="fxRate'+i+'" step="0.0001" placeholder="leave blank to use entry">' +
     '<div class="fx-rate-help" id="fxRateHelp'+i+'"></div>' +
+    '</div>' +
+    '<div class="override-row">' +
+    '<div><label>Margin Override Intraday ($/contract)</label>' +
+    '<input type="number" id="mIDOverride'+i+'" placeholder="blank = default" step="any"></div>' +
+    '<div><label>Margin Override Overnight ($/contract)</label>' +
+    '<input type="number" id="mONOverride'+i+'" placeholder="blank = default" step="any"></div>' +
+    '<div class="override-help">For futures only. Pull actual BP Effect from TOS (1-contract test order) and paste here. Persists per Trade slot. Leave blank to use the table default.</div>' +
     '</div>' +
     '<div class="input-group"><label>Direction</label>' +
     '<div class="toggle-group">' +
@@ -624,12 +663,9 @@ function reorderPrices(i, dir) {
 function renderCalcs() {
   var cont = document.getElementById('calculators');
   for (var i = 1; i <= 6; i++) {
-    var calc = createCalc(i);
-    calculators.push(calc);
-    var row = document.createElement('div');
-    row.className = 'calculator-row';
-    row.innerHTML = buildHTML(i);
-    cont.appendChild(row);
+    var calc = createCalc(i); calculators.push(calc);
+    var row = document.createElement('div'); row.className = 'calculator-row';
+    row.innerHTML = buildHTML(i); cont.appendChild(row);
     (function(calc, i) {
       var st = loadState(i);
       if (st) {
@@ -641,6 +677,8 @@ function renderCalcs() {
         if (st.lotSize) document.getElementById('lotSize'+i).value = st.lotSize;
         if (st.customLot) document.getElementById('customLot'+i).value = st.customLot;
         if (st.fxRate) document.getElementById('fxRate'+i).value = st.fxRate;
+        if (st.mIDOverride) document.getElementById('mIDOverride'+i).value = st.mIDOverride;
+        if (st.mONOverride) document.getElementById('mONOverride'+i).value = st.mONOverride;
         if (st.direction === 'short') {
           document.getElementById('shortBtn'+i).classList.add('active');
           document.getElementById('longBtn'+i).classList.remove('active');
@@ -671,11 +709,9 @@ function renderCalcs() {
         document.getElementById('longBtn'+i).classList.remove('active');
         reorderPrices(i, 'short'); saveState(i); calc.calculate();
       });
-      // CHANGED in v4: prices PERSIST when changing instruments (no clearing)
       document.getElementById('instrument'+i).addEventListener('change', function() {
         saveState(i); calc.calculate();
       });
-      // NEW in v4: explicit Clear Prices button
       document.getElementById('clearBtn'+i).addEventListener('click', function() {
         calc.clearPrices();
       });
@@ -688,6 +724,8 @@ function renderCalcs() {
       });
       document.getElementById('customLot'+i).addEventListener('input', function() { saveState(i); calc.calculate(); });
       document.getElementById('fxRate'+i).addEventListener('input', function() { saveState(i); calc.calculate(); });
+      document.getElementById('mIDOverride'+i).addEventListener('input', function() { saveState(i); calc.calculate(); });
+      document.getElementById('mONOverride'+i).addEventListener('input', function() { saveState(i); calc.calculate(); });
     })(calc, i);
     calc.calculate();
   }
