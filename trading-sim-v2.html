@@ -105,23 +105,19 @@ hr{border:none;border-top:1px solid #30363d;margin:8px 0}
   </div>
 
   <div class="card realism">
-    <h3>Regime Coupling (Realism)</h3>
+    <h3>Realism Settings</h3>
+    <div style="color:#f85149;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:4px 0 6px;border-bottom:1px solid #30363d;padding-bottom:4px">Regime Coupling</div>
     <label><input type="checkbox" id="regimeOn" checked /> Enable bad regime months</label>
-    <small>When enabled, some months are "bad regime" — fewer setups AND lower win rate, simulating chop, news risk, regime change.</small>
+    <small>Some months are "bad regime" — fewer setups AND lower win rate (chop, news risk, regime change).</small>
     <label>Bad Regime Probability (% per month)</label><input id="regimeProb" value="12" />
     <label>Trade Count Reduction (%)</label><input id="regimeTradeCut" value="40" />
     <label>Win Rate Reduction (percentage points)</label><input id="regimeWRCut" value="8" />
-    <div class="realism-note">Default ON. Makes the model more honest.</div>
-  </div>
 
-  <div class="card costs">
-    <h3>Trading Costs (per trade)</h3>
-    <small>Subtracted from each trade's P&amp;L (commissions for futures, spread for FX). Each strategy has its own cost field below.</small>
+    <div style="color:#c9d1d9;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px;border-bottom:1px solid #30363d;padding-bottom:4px">Trading Costs</div>
     <label><input type="checkbox" id="costsOn" checked /> Apply costs to each trade</label>
+    <small>Subtracted from each trade's P&amp;L. Per-strategy cost values are in the strategy cards below.</small>
     <div class="realism-note" style="border-left-color:#c9d1d9;color:#c9d1d9bb">
-      Defaults: Standard $30 (mostly futures with some FX), A+ $40 (larger size), B/C $20 each.
-      Adjust per strategy to match your real round-trip costs. For futures: ~$2–$5/contract round-trip × contract count.
-      For FX spot: spread × pip value × lot count.
+      Defaults: Standard $30, A+ $40, B/C $20. Futures: ~$2–$5/contract round-trip × contracts. FX spot: spread × pip value × lots.
     </div>
   </div>
 
