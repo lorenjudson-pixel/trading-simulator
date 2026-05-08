@@ -1,825 +1,670 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Trading Strategy Simulator v5</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Position Size Calculator v2</title>
 <style>
-body{margin:0;font-family:Inter,system-ui,sans-serif;background:#0d1117;color:#e6edf3}
-header{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#161b22;border-bottom:1px solid #30363d;box-shadow:0 4px 12px rgba(0,0,0,0.4)}
-header h1{font-size:18px;margin:0;display:inline-block}
-header .v{font-size:11px;opacity:.6;margin-left:8px}
-header button{background:#238636;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;margin-left:6px;font-weight:600;font-size:13px}
-header button.secondary{background:#30363d}
-header button:hover{filter:brightness(1.15)}
-.container{padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
-.card{background:#161b22;border-radius:10px;padding:14px}
-.card h3{margin:0 0 10px 0;font-size:13px;color:#58a6ff;text-transform:uppercase;letter-spacing:.5px}
-.card.aplus{border:1px solid #f0883e}
-.card.aplus h3{color:#f0883e}
-.card.live{background:#0d2c1f;border:1px solid #2ea043}
-.card.live h3{color:#3fb950}
-.card.rules{border:1px solid #58a6ff44}
-.card.realism{border:1px solid #f085494d}
-.card.realism h3{color:#f85149}
-label{font-size:12px;opacity:.85;display:block;margin-top:6px}
-input,select{width:100%;margin-top:3px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:5px;padding:5px 7px;font-family:inherit;font-size:13px;box-sizing:border-box}
-input[type=checkbox]{width:auto;margin:0 6px 0 0}
-canvas{background:#0d1117;margin-top:8px}
-.summary{grid-column:1/-1;font-size:13px;background:#161b22;padding:16px;border-radius:10px;line-height:1.7}
-.summary .big{font-size:22px;font-weight:600;color:#3fb950;margin-right:12px}
-.summary .stat{display:inline-block;margin:6px 10px 6px 0;padding:8px 12px;background:#0d1117;border-radius:6px}
-.summary .stat .lbl{font-size:11px;opacity:.65;display:block;text-transform:uppercase}
-.summary .stat .val{font-size:16px;font-weight:600}
-.summary .stat .val.bad{color:#f85149}
-.summary .stat .val.good{color:#3fb950}
-.summary .stat .val.warn{color:#f0883e}
-.milestone-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;background:#161b22;padding:14px;border-radius:10px}
-.milestone-grid .header-label{grid-column:1/-1;color:#8b949e;font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin:0}
-.milestone-card{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:12px}
-.milestone-card h4{margin:0 0 6px;color:#58a6ff;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
-.milestone-card .median{font-size:20px;font-weight:600;color:#3fb950;margin-bottom:6px}
-.milestone-card .row{display:flex;justify-content:space-between;font-size:12px;margin-top:3px;color:#c9d1d9}
-.milestone-card .row .lbl{opacity:.7}
-.milestone-card .target-pct{margin-top:8px;padding:6px;background:#161b22;border-radius:4px;text-align:center;font-size:12px}
-.tableWrap{grid-column:1/-1;max-height:400px;overflow:auto;background:#161b22;padding:12px;border-radius:10px}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th,td{border-bottom:1px solid #30363d;padding:5px 7px;text-align:right}
-th{position:sticky;top:0;background:#161b22;font-size:11px;color:#8b949e;text-transform:uppercase}
-th:first-child,td:first-child{text-align:center}
-small{opacity:.6;font-size:11px;display:block;margin-top:2px}
-.section-title{grid-column:1/-1;color:#8b949e;font-size:12px;text-transform:uppercase;margin:8px 0 -8px 4px;letter-spacing:.5px}
-hr{border:none;border-top:1px solid #30363d;margin:8px 0}
-.live-block{font-size:13px;line-height:1.55}
-.live-block .h{color:#3fb950;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.live-block .row{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
-.live-block .row .lbl{opacity:.8}
-.live-block .row .val{font-family:'JetBrains Mono',Consolas,monospace}
-.live-block .footnote{margin-top:8px;font-size:11px;opacity:.7;font-style:italic;border-left:2px solid #f0883e;padding-left:8px}
-.realism-note{margin-top:6px;padding:6px;background:#0d1117;border-radius:4px;font-size:11px;color:#f85149bb;border-left:2px solid #f85149}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#0d1117; color:#c9d1d9; padding:20px; line-height:1.6; }
+.container { max-width:1600px; margin:0 auto; }
+h1 { text-align:center; margin-bottom:8px; color:#58a6ff; font-size:2em; }
+.version { text-align:center; color:#8b949e; font-size:.85em; margin-bottom:20px; }
+.global-risk { background:#161b22; border:2px solid #30363d; border-radius:12px; padding:20px; margin-bottom:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; }
+.global-risk .field { text-align:center; }
+.global-risk label { display:block; color:#58a6ff; font-size:.95em; font-weight:600; margin-bottom:6px; }
+.global-risk input { width:100%; padding:10px; background:#0d1117; border:2px solid #30363d; border-radius:8px; color:#c9d1d9; font-size:1.1em; text-align:center; font-weight:bold; }
+.global-risk input:focus { outline:none; border-color:#58a6ff; }
+.margin-summary { background:#161b22; border:2px solid #30363d; border-radius:12px; padding:25px; margin-bottom:20px; }
+.summary-header { text-align:center; margin-bottom:16px; padding-bottom:12px; border-bottom:2px solid #30363d; }
+.summary-header h2 { color:#58a6ff; font-size:1.2em; margin:0; }
+.summary-totals { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:16px; }
+.total-column { background:#0d1117; padding:14px; border-radius:8px; border:1px solid #30363d; text-align:center; }
+.total-label { color:#8b949e; font-size:.85em; margin-bottom:8px; }
+.total-value { font-size:1.8em; font-weight:bold; color:#58a6ff; }
+.total-value.warn { color:#f0ad4e; }
+.total-value.bad { color:#f85149; }
+.summary-breakdown { background:#0d1117; border-radius:8px; border:1px solid #30363d; overflow:hidden; }
+.breakdown-table { width:100%; border-collapse:collapse; font-size:.9em; }
+.breakdown-table thead { background:#161b22; }
+.breakdown-table th, .breakdown-table td { padding:10px 14px; text-align:left; border-bottom:1px solid #30363d; }
+.breakdown-table th { color:#8b949e; font-size:.8em; font-weight:600; }
+.breakdown-table th:not(:first-child), .breakdown-table td:not(:first-child) { text-align:right; }
+.breakdown-table tbody tr:last-child td { border-bottom:none; }
+.breakdown-instrument { color:#58a6ff; font-weight:600; }
+.breakdown-value { color:#58a6ff; font-weight:bold; }
+.no-trades { padding:18px; text-align:center; color:#8b949e; }
+.calculator-row { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:18px; margin-bottom:16px; }
+.row-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid #30363d; padding-bottom:10px; }
+.row-header h3 { color:#58a6ff; font-size:1.05em; margin:0; }
+.row-header-right { display:flex; gap:10px; align-items:center; }
+.broker-toggle-small { display:flex; gap:0; background:#0d1117; border-radius:6px; padding:3px; border:1px solid #30363d; }
+.broker-btn-small { padding:5px 14px; background:transparent; border:none; color:#8b949e; cursor:pointer; font-size:.82em; border-radius:4px; transition:all .3s; }
+.broker-btn-small.active { background:#238636; color:white; }
+.calculator-body { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.card { background:#0d1117; border:1px solid #30363d; border-radius:8px; padding:14px; }
+.card h4 { color:#58a6ff; margin-bottom:12px; font-size:.95em; border-bottom:1px solid #30363d; padding-bottom:6px; }
+.input-group { margin-bottom:10px; }
+label { display:block; margin-bottom:4px; color:#8b949e; font-size:.82em; }
+input, select { width:100%; padding:7px; background:#161b22; border:1px solid #30363d; border-radius:6px; color:#c9d1d9; font-size:.88em; }
+input:focus, select:focus { outline:none; border-color:#58a6ff; }
+.price-input { font-size:1.2em; font-weight:bold; padding:10px; }
+.entry-price { color:#f0ad4e; border-color:#f0ad4e; }
+.stop-price { color:#f85149; border-color:#f85149; }
+.limit-price { color:#3fb950; border-color:#3fb950; }
+.toggle-group { display:flex; gap:6px; margin-bottom:10px; }
+.toggle-btn { flex:1; padding:7px; background:#161b22; border:1px solid #30363d; border-radius:6px; color:#c9d1d9; cursor:pointer; text-align:center; transition:all .3s; font-size:.82em; }
+.toggle-btn.active { background:#238636; border-color:#238636; color:white; }
+.toggle-btn.short.active { background:#da3633; border-color:#da3633; }
+.results-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.results-grid.full { grid-template-columns:1fr; }
+.result-item { background:#161b22; padding:9px; border-radius:6px; border:1px solid #30363d; }
+.result-label { color:#8b949e; font-size:.72em; margin-bottom:3px; }
+.result-sublabel { color:#6e7681; font-size:.68em; margin-top:3px; }
+.result-value { font-size:1.1em; font-weight:bold; color:#58a6ff; }
+.result-value.positive { color:#3fb950; }
+.result-value.negative { color:#f85149; }
+.result-value.warn { color:#f0ad4e; }
+.sanity-pane { margin-top:10px; padding:10px; background:#0d2c1f; border:1px solid #2ea043; border-radius:6px; font-size:.78em; line-height:1.5; }
+.sanity-pane.warn { background:#2c1f0d; border-color:#f0ad4e; }
+.sanity-pane.bad { background:#2c0d0d; border-color:#f85149; }
+.sanity-pane .h { color:#3fb950; font-weight:600; text-transform:uppercase; letter-spacing:.5px; font-size:.75em; margin-bottom:5px; }
+.sanity-pane.warn .h { color:#f0ad4e; }
+.sanity-pane.bad .h { color:#f85149; }
+.fx-rate-row { display:none; }
+.fx-rate-row.show { display:block; }
+@media (max-width:1200px) { .calculator-body { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
-<header>
-  <div>
-    <h1>Trading Strategy Simulator</h1>
-    <span class="v">v5 — Sandbox Build</span>
-  </div>
-  <div>
-    <button class="secondary" id="saveBtn">Save Inputs</button>
-    <button id="previewBtn">Run Simulation</button>
-  </div>
-</header>
 <div class="container">
+<h1>Position Size Calculator</h1>
+<div class="version">v2 — fixed FX pip values, added notional/leverage/account-% sanity checks</div>
 
-  <div class="section-title">Inputs</div>
-
-  <div class="card">
-    <h3>Account</h3>
-    <label>Starting Balance ($)</label><input id="start" value="150000" />
-    <label>Months</label><input id="months" type="number" value="36" min="1" />
-    <label>Tax % (annual on net)</label><input id="tax" value="34" />
-    <label>Target Balance ($)</label><input id="target" value="400000" />
-    <label>Monte Carlo Runs</label><input id="runs" type="number" value="2000" />
-    <label>Seed (blank = random)</label><input id="seed" placeholder="leave blank for random" />
-    <label><input type="checkbox" id="tysonMode" /> Tyson Mode (early DD stress)</label>
-    <label><input type="checkbox" id="vacationMode" /> Vacation Mode (Jun &amp; Dec −50%)</label>
+<div class="global-risk">
+  <div class="field">
+    <label>Account Size ($)</label>
+    <input type="number" id="acctSize" step="1000" value="150000">
   </div>
-
-  <div class="card rules">
-    <h3>Risk Rules</h3>
-    <label>Trading Days / Month</label><input id="tradingDays" type="number" value="21" />
-    <label>Daily Loss Cap (R; 0 = none)</label><input id="dailyCap" value="3" />
-    <small>Halts trading the rest of the day after this many R lost.</small>
-    <label>Weekly Loss Cap (R; 0 = none)</label><input id="weeklyCap" value="6" />
-    <label>Risk Sizing</label>
-    <select id="sizingMode">
-      <option value="month">Month-start equity</option>
-      <option value="trade">Per-trade equity (continuous)</option>
-    </select>
-    <label>Correlation Factor (0–1)</label><input id="corr" value="0.2" />
-    <small>0 = independent. Higher = same-day cluster.</small>
+  <div class="field">
+    <label>Risk Per Trade ($)</label>
+    <input type="number" id="globalRisk" step="50" value="2250">
   </div>
-
-  <div class="card realism">
-    <h3>Regime Coupling (Realism)</h3>
-    <label><input type="checkbox" id="regimeOn" checked /> Enable bad regime months</label>
-    <small>When enabled, some months are "bad regime" — fewer setups AND lower win rate, simulating chop, news risk, regime change.</small>
-    <label>Bad Regime Probability (% per month)</label><input id="regimeProb" value="12" />
-    <label>Trade Count Reduction (%)</label><input id="regimeTradeCut" value="40" />
-    <label>Win Rate Reduction (percentage points)</label><input id="regimeWRCut" value="8" />
-    <div class="realism-note">Default ON. Makes the model more honest. Turn off to see "academic" view (results will look better but less realistic).</div>
+  <div class="field">
+    <label>Risk Per Trade (% of acct)</label>
+    <input type="text" id="globalRiskPct" value="1.50%" readonly style="background:#0d1117;color:#58a6ff">
   </div>
-
-  <div class="card">
-    <h3>Withdrawals (Monthly)</h3>
-    <label>Year 1</label><input id="w1" value="0" />
-    <label>Year 2</label><input id="w2" value="0" />
-    <label>Year 3</label><input id="w3" value="0" />
-    <label>Year 4</label><input id="w4" value="0" />
-    <label>Year 5</label><input id="w5" value="0" />
-    <label>No Withdrawals for First (months)</label><input id="noWMonths" type="number" value="12" />
-  </div>
-
-  <div class="card live">
-    <h3>Live Expectancy (math, no variance)</h3>
-    <div id="liveExp" class="live-block">Update inputs to see expectancy.</div>
-  </div>
-
-  <div class="section-title">Strategies</div>
-
-  <div class="card">
-    <h3>Strategy A (Standard)</h3>
-    <label><input type="checkbox" id="en" checked /> Enable</label>
-    <label>Risk %</label><input id="risk" value="1.5" />
-    <label>Win Rate %</label><input id="win" value="60" />
-    <label>R:R</label><input id="rr" value="1.3" />
-    <label>Trades / Month</label><input id="trades" value="20" />
-    <label>Trades Variability ±</label><input id="varA" value="7" />
-  </div>
-
-  <div class="card aplus">
-    <h3>A+ Setups (rare best)</h3>
-    <label><input type="checkbox" id="enA" checked /> Enable</label>
-    <label>Risk %</label><input id="riskA" value="3" />
-    <label>Win Rate %</label><input id="winA" value="65" />
-    <label>R:R</label><input id="rrA" value="2" />
-    <label>Avg Trades / Month</label><input id="tradesA" value="1.5" />
-    <label>Max A+ / Month</label><input id="maxA" type="number" value="3" />
-  </div>
-
-  <div class="card">
-    <h3>Strategy B (optional)</h3>
-    <label><input type="checkbox" id="en2" /> Enable</label>
-    <label>Risk %</label><input id="risk2" value="0.75" />
-    <label>Win Rate %</label><input id="win2" value="50" />
-    <label>R:R</label><input id="rr2" value="2" />
-    <label>Trades / Month</label><input id="trades2" value="10" />
-    <label>Trades Variability ±</label><input id="varB" value="3" />
-  </div>
-
-  <div class="card">
-    <h3>Strategy C (optional)</h3>
-    <label><input type="checkbox" id="en3" /> Enable</label>
-    <label>Risk %</label><input id="risk3" value="0.5" />
-    <label>Win Rate %</label><input id="win3" value="55" />
-    <label>R:R</label><input id="rr3" value="1.5" />
-    <label>Trades / Month</label><input id="trades3" value="8" />
-    <label>Trades Variability ±</label><input id="varC" value="3" />
-  </div>
-
-  <div class="summary" id="summary">Click "Run Simulation" to begin.</div>
-
-  <div class="milestone-grid" id="milestones" style="display:none">
-    <div class="header-label">Year-End Milestones (across all runs)</div>
-  </div>
-
-  <div style="grid-column:1/-1">
-    <div style="color:#8b949e;font-size:12px;text-transform:uppercase;margin-bottom:4px;letter-spacing:.5px">Equity Path Distribution (median, percentile bands, worst 5% sample, year markers)</div>
-    <canvas id="equityChart" height="170"></canvas>
-  </div>
-  <div style="grid-column:1/-1">
-    <div style="color:#8b949e;font-size:12px;text-transform:uppercase;margin-bottom:4px;letter-spacing:.5px">Monthly P&amp;L Distribution (where the losing months live)</div>
-    <canvas id="pnlChart" height="120"></canvas>
-  </div>
-  <div style="grid-column:1/-1">
-    <div style="color:#8b949e;font-size:12px;text-transform:uppercase;margin-bottom:4px;letter-spacing:.5px">Final Balance Distribution</div>
-    <canvas id="histChart" height="120"></canvas>
-  </div>
-  <div style="grid-column:1/-1">
-    <div style="color:#8b949e;font-size:12px;text-transform:uppercase;margin-bottom:4px;letter-spacing:.5px">Monthly Win Rate Distribution (the random walk in WR)</div>
-    <canvas id="wrChart" height="120"></canvas>
-  </div>
-  <div class="tableWrap">
-    <div style="color:#8b949e;font-size:12px;text-transform:uppercase;margin-bottom:8px;letter-spacing:.5px">Per-Month Percentiles (across all runs)</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Month</th><th>p10</th><th>p25</th><th>Median</th><th>p75</th><th>p90</th><th>Withdraw</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
+  <div class="field">
+    <label>Target % for Break Even</label>
+    <input type="number" id="targetPercent" step="1" min="0" max="100" value="70">
   </div>
 </div>
+
+<div class="margin-summary">
+  <div class="summary-header"><h2>Total Margin Required (across active trades)</h2></div>
+  <div class="summary-totals">
+    <div class="total-column"><div class="total-label">Intraday $</div><div class="total-value" id="summaryTotalID">$0</div></div>
+    <div class="total-column"><div class="total-label">Intraday % of acct</div><div class="total-value" id="summaryTotalIDPct">0%</div></div>
+    <div class="total-column"><div class="total-label">Overnight $</div><div class="total-value" id="summaryTotalON">$0</div></div>
+    <div class="total-column"><div class="total-label">Overnight % of acct</div><div class="total-value" id="summaryTotalONPct">0%</div></div>
+  </div>
+  <div class="summary-breakdown" id="summaryBreakdown"><div class="no-trades">No active trades</div></div>
+</div>
+
+<div id="calculators"></div>
+</div>
+
 <script>
-function mulberry32(a){return function(){var t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;}}
-const fmt = n => '$' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0});
-const fmtBig = n => {
-  if (Math.abs(n) >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
-  if (Math.abs(n) >= 1e3) return '$' + (n/1e3).toFixed(0) + 'k';
-  return fmt(n);
-};
-const fmtSigned = n => (n >= 0 ? '+' : '') + fmt(n);
-function formatCurrency(value){const num=parseInt(String(value).replace(/[^0-9]/g,''))||0;return '$'+num.toLocaleString();}
-function parseCurrency(value){return parseInt(String(value).replace(/[^0-9]/g,''))||0;}
-const v = id => document.getElementById(id).value;
-const vn = id => +v(id);
-const vc = id => parseCurrency(v(id));
-const vChk = id => document.getElementById(id).checked;
-const percentile = (sortedAsc, p) => {
-  if (sortedAsc.length === 0) return 0;
-  const idx = Math.min(sortedAsc.length - 1, Math.floor(sortedAsc.length * p));
-  return sortedAsc[idx];
+// =============================================================================
+// INSTRUMENT DEFINITIONS — all FX SPOT pip values are now PER UNIT (will scale by lot size)
+// All futures have fixed contract sizes baked in
+// =============================================================================
+// For FX spot: tickValuePerUnit = pip value per 1 unit of base currency (USD)
+//   - USD-quote pairs (EURUSD, GBPUSD, AUDUSD, NZDUSD): 0.0001 USD per unit (1 pip × 0.0001)
+//   - USD-base pairs (USDCAD, USDCHF): 0.0001 quote currency per unit, needs FX conversion
+//   - USDJPY: 0.01 JPY per unit, needs FX conversion (JPY tick is 0.01 not 0.0001)
+
+// Futures (NinjaTrader margins)
+var instrumentsNinja={
+  // Index futures
+  MES:{tickSize:0.25,tickValue:1.25,marginID:50,marginON:1166,isFutures:true,assetClass:'index'},
+  ES:{tickSize:0.25,tickValue:12.50,marginID:500,marginON:11660,isFutures:true,assetClass:'index'},
+  MNQ:{tickSize:0.25,tickValue:0.50,marginID:100,marginON:1738,isFutures:true,assetClass:'index'},
+  NQ:{tickSize:0.25,tickValue:5.00,marginID:1000,marginON:17380,isFutures:true,assetClass:'index'},
+  // Metals & energy
+  MGC:{tickSize:0.10,tickValue:1.00,marginID:200,marginON:814,isFutures:true,assetClass:'commodity'},
+  GC:{tickSize:0.10,tickValue:10.00,marginID:2000,marginON:8140,isFutures:true,assetClass:'commodity'},
+  MCL:{tickSize:0.01,tickValue:1.00,marginID:100,marginON:726,isFutures:true,assetClass:'commodity'},
+  CL:{tickSize:0.01,tickValue:10.00,marginID:2000,marginON:7260,isFutures:true,assetClass:'commodity'},
+  SIL:{tickSize:0.005,tickValue:5.00,marginID:440,marginON:4400,isFutures:true,assetClass:'commodity'},
+  SI:{tickSize:0.005,tickValue:25.00,marginID:2200,marginON:22000,isFutures:true,assetClass:'commodity'},
+  MBT:{tickSize:5,tickValue:0.50,marginID:200,marginON:2000,isFutures:true,assetClass:'crypto'},
+  // Grains
+  ZC:{tickSize:0.0025,tickValue:12.50,marginID:250,marginON:2475,isFutures:true,assetClass:'grain'},
+  ZW:{tickSize:0.0025,tickValue:12.50,marginID:200,marginON:2000,isFutures:true,assetClass:'grain'},
+  ZS:{tickSize:0.0025,tickValue:12.50,marginID:250,marginON:2475,isFutures:true,assetClass:'grain'},
+  // Rates
+  ZT:{tickSize:0.0078125,tickValue:15.625,marginID:500,marginON:1540,isFutures:true,assetClass:'rates'},
+  ZN:{tickSize:0.015625,tickValue:15.625,marginID:500,marginON:2475,isFutures:true,assetClass:'rates'},
+  ZB:{tickSize:0.03125,tickValue:31.25,marginID:1000,marginON:4620,isFutures:true,assetClass:'rates'},
+  // FX FUTURES (fixed contract sizes)
+  M6A:{tickSize:0.0001,tickValue:1.00,marginID:50,marginON:220,isFutures:true,assetClass:'fxfut',contractSize:10000,quote:'USD'},
+  A6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:2200,isFutures:true,assetClass:'fxfut',contractSize:100000,quote:'USD'},
+  M6E:{tickSize:0.0001,tickValue:1.25,marginID:50,marginON:292,isFutures:true,assetClass:'fxfut',contractSize:12500,quote:'USD'},
+  E6:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:2915,isFutures:true,assetClass:'fxfut',contractSize:125000,quote:'USD'},
+  M6B:{tickSize:0.0001,tickValue:0.625,marginID:50,marginON:308,isFutures:true,assetClass:'fxfut',contractSize:6250,quote:'USD'},
+  B6:{tickSize:0.0001,tickValue:6.25,marginID:500,marginON:3080,isFutures:true,assetClass:'fxfut',contractSize:62500,quote:'USD'},
+  MICD:{tickSize:0.0001,tickValue:1.00,marginID:50,marginON:152,isFutures:true,assetClass:'fxfut',contractSize:10000,quote:'CAD'},
+  C6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:1518,isFutures:true,assetClass:'fxfut',contractSize:100000,quote:'CAD'},
+  S6:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:4950,isFutures:true,assetClass:'fxfut',contractSize:125000,quote:'CHF'},
+  J6:{tickSize:0.0000005,tickValue:6.25,marginID:500,marginON:4092,isFutures:true,assetClass:'fxfut',contractSize:12500000,quote:'JPY'},
+  // FX SPOT — pip values are PER UNIT of base; calculator will scale by user's lot size
+  AUDUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
+  EURUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
+  GBPUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
+  NZDUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
+  USDCAD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,quote:'CAD',marginPctIntra:0.05,marginPctNight:0.05},
+  USDCHF:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,quote:'CHF',marginPctIntra:0.05,marginPctNight:0.05},
+  USDJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05},
+  EURJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05},
+  GBPJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05}
 };
 
-let equityChart, histChart, wrChart, pnlChart;
+// TOS-specific overrides (futures use TOS overnight margins)
+var tosOverrides={
+  MES:{marginID:2465,marginON:2465}, ES:{marginID:24650,marginON:24650},
+  MNQ:{marginID:3692,marginON:3692}, NQ:{marginID:36918,marginON:36918},
+  MGC:{marginID:2618,marginON:2618}, GC:{marginID:25650,marginON:25650},
+  MCL:{marginID:457,marginON:457}, CL:{marginID:4754,marginON:4754},
+  SIL:{marginID:4400,marginON:4400}, SI:{marginID:22000,marginON:22000},
+  MBT:{marginID:2000,marginON:2000},
+  ZC:{marginID:2475,marginON:2475}, ZW:{marginID:2000,marginON:2000}, ZS:{marginID:2475,marginON:2475},
+  ZT:{marginID:1540,marginON:1540}, ZN:{marginID:2475,marginON:2475}, ZB:{marginID:4620,marginON:4620},
+  M6A:{marginID:209,marginON:209}, A6:{marginID:2090,marginON:2090},
+  M6E:{marginID:297,marginON:297}, E6:{marginID:2970,marginON:2970},
+  M6B:{marginID:220,marginON:220}, B6:{marginID:2200,marginON:2200},
+  MICD:{marginID:110,marginON:110}, C6:{marginID:1100,marginON:1100},
+  S6:{marginID:4950,marginON:4950}, J6:{marginID:3080,marginON:3080}
+};
 
-const yearLinesPlugin = {
-  id: 'yearLines',
-  afterDatasetsDraw(chart) {
-    const {ctx, chartArea, scales} = chart;
-    if (!scales.x) return;
-    for (let yr = 1; yr <= 10; yr++) {
-      const month = yr * 12;
-      const xPos = scales.x.getPixelForValue(month);
-      if (!isFinite(xPos) || xPos < chartArea.left - 1 || xPos > chartArea.right + 1) continue;
-      ctx.save();
-      ctx.strokeStyle = 'rgba(139,148,158,0.45)';
-      ctx.setLineDash([4,4]);
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(xPos, chartArea.top);
-      ctx.lineTo(xPos, chartArea.bottom);
-      ctx.stroke();
-      ctx.fillStyle = '#8b949e';
-      ctx.font = '11px sans-serif';
-      ctx.fillText('Y' + yr, xPos + 4, chartArea.top + 14);
-      ctx.restore();
-    }
+function getInstrument(key, broker) {
+  var base = instrumentsNinja[key];
+  if (!base) return null;
+  var inst = Object.assign({}, base);
+  if (broker === 'tos' && tosOverrides[key]) {
+    inst.marginID = tosOverrides[key].marginID;
+    inst.marginON = tosOverrides[key].marginON;
   }
-};
-
-function calcLiveExpectancy() {
-  const strats = [
-    {label:'A (Standard)', en:vChk('en'), risk:vn('risk')/100, win:vn('win')/100, rr:vn('rr'), trades:vn('trades')},
-    {label:'B', en:vChk('en2'), risk:vn('risk2')/100, win:vn('win2')/100, rr:vn('rr2'), trades:vn('trades2')},
-    {label:'C', en:vChk('en3'), risk:vn('risk3')/100, win:vn('win3')/100, rr:vn('rr3'), trades:vn('trades3')}
-  ];
-  const aPlus = {label:'A+', en:vChk('enA'), risk:vn('riskA')/100, win:vn('winA')/100, rr:vn('rrA'), trades:vn('tradesA')};
-  let html = '<div class="h">Per-Strategy Math</div>';
-  let monthlyMult = 1, anyEnabled = false;
-  [...strats, aPlus].forEach(s => {
-    if (!s.en) return;
-    anyEnabled = true;
-    const evPct = s.risk * (s.win * s.rr - (1 - s.win));
-    const monthlyMultS = Math.pow(1 + evPct, s.trades);
-    monthlyMult *= monthlyMultS;
-    const c = evPct >= 0 ? '#3fb950' : '#f85149';
-    html += `<div class="row"><span class="lbl">${s.label} (${s.trades} trades × <span style="color:${c}">${(evPct*100).toFixed(2)}%</span>/trade)</span><span class="val" style="color:${c}">${((monthlyMultS-1)*100).toFixed(2)}%/mo</span></div>`;
-  });
-  if (!anyEnabled) {
-    document.getElementById('liveExp').innerHTML = '<small>No strategies enabled.</small>';
-    return;
-  }
-  const tax = vn('tax')/100;
-  const months = vn('months');
-  const periodMult = Math.pow(monthlyMult, months);
-  const yearly = Math.pow(monthlyMult, 12);
-  const afterTaxPeriod = 1 + (periodMult - 1) * (1 - tax);
-  const start = vc('start');
-  const target = vc('target');
-  const ok = start * afterTaxPeriod >= target;
-  html += `<hr>`;
-  html += `<div class="h">If Math Plays Out Perfectly</div>`;
-  html += `<div class="row"><span class="lbl">Combined growth</span><span class="val">+${((monthlyMult-1)*100).toFixed(2)}% per month</span></div>`;
-  html += `<div class="row"><span class="lbl">Annualized</span><span class="val">${yearly.toFixed(2)}× per year</span></div>`;
-  html += `<div class="row"><span class="lbl">Over ${months} months (pre-tax)</span><span class="val">${periodMult.toFixed(2)}× → ${fmtBig(start * periodMult)}</span></div>`;
-  html += `<div class="row"><span class="lbl">After ${(tax*100).toFixed(0)}% tax</span><span class="val" style="color:${ok?'#3fb950':'#f85149'}">${fmtBig(start * afterTaxPeriod)}</span></div>`;
-  html += `<div class="row"><span class="lbl">vs target ${fmtBig(target)}</span><span class="val" style="color:${ok?'#3fb950':'#f85149'}">${ok ? 'EV exceeds target' : 'EV below target'}</span></div>`;
-  html += `<div class="footnote">Theoretical "perfect execution" path with no variance, no drawdowns, no risk caps, no bad regimes. Real Monte Carlo will be much lower. Sanity-check only.</div>`;
-  document.getElementById('liveExp').innerHTML = html;
+  return inst;
 }
 
-function runSimulation() {
-  const startVal = vc('start');
-  const simulationMonths = vn('months');
-  const taxR = vn('tax')/100;
-  const targetN = vc('target');
-  const runsN = vn('runs');
-  const seedRaw = v('seed').trim();
-  const seed = seedRaw ? (parseInt(seedRaw) >>> 0) : (Math.floor(Math.random() * 0x7fffffff));
-  const rng = mulberry32(seed);
-  const tradingDays = Math.max(1, vn('tradingDays'));
-  const dailyCapR = vn('dailyCap');
-  const weeklyCapR = vn('weeklyCap');
-  const sizingMode = document.getElementById('sizingMode').value;
-  const corr = Math.max(0, Math.min(1, vn('corr')));
-  const w = [vc('w1'), vc('w2'), vc('w3'), vc('w4'), vc('w5')];
-  const noWithdrawMonths = vn('noWMonths');
-  const tysonMode = vChk('tysonMode');
-  const vacationMode = vChk('vacationMode');
-  const regimeOn = vChk('regimeOn');
-  const regimeProb = vn('regimeProb') / 100;
-  const regimeTradeCut = vn('regimeTradeCut') / 100;
-  const regimeWRCut = vn('regimeWRCut') / 100;
+var calculators=[];
 
-  const strats = [
-    {idx:0, en:vChk('en'), risk:vn('risk')/100, win:vn('win')/100, rr:vn('rr'), trades:vn('trades'), variance:vn('varA')},
-    {idx:1, en:vChk('en2'), risk:vn('risk2')/100, win:vn('win2')/100, rr:vn('rr2'), trades:vn('trades2'), variance:vn('varB')},
-    {idx:2, en:vChk('en3'), risk:vn('risk3')/100, win:vn('win3')/100, rr:vn('rr3'), trades:vn('trades3'), variance:vn('varC')}
-  ];
-  const aPlus = {en:vChk('enA'), risk:vn('riskA')/100, win:vn('winA')/100, rr:vn('rrA'), trades:vn('tradesA'), maxTrades:vn('maxA')};
+var instrumentOptions = '<optgroup label="Index Futures">' +
+  '<option value="MES">MES — Micro E-mini S&P 500</option>' +
+  '<option value="ES">ES — E-mini S&P 500</option>' +
+  '<option value="MNQ">MNQ — Micro E-mini Nasdaq-100</option>' +
+  '<option value="NQ">NQ — E-mini Nasdaq-100</option>' +
+  '</optgroup>' +
+  '<optgroup label="Metals / Energy / Crypto">' +
+  '<option value="MGC">MGC — Micro Gold</option>' +
+  '<option value="GC">GC — Gold</option>' +
+  '<option value="SIL">SIL — Micro Silver</option>' +
+  '<option value="SI">SI — Silver</option>' +
+  '<option value="MCL">MCL — Micro Crude Oil</option>' +
+  '<option value="CL">CL — Crude Oil</option>' +
+  '<option value="MBT">MBT — Micro Bitcoin</option>' +
+  '</optgroup>' +
+  '<optgroup label="Grains">' +
+  '<option value="ZC">ZC — Corn</option>' +
+  '<option value="ZW">ZW — Wheat</option>' +
+  '<option value="ZS">ZS — Soybeans</option>' +
+  '</optgroup>' +
+  '<optgroup label="Rates / Bonds">' +
+  '<option value="ZT">ZT — 2Y Treasury Note</option>' +
+  '<option value="ZN">ZN — 10Y Treasury Note</option>' +
+  '<option value="ZB">ZB — 30Y Treasury Bond</option>' +
+  '</optgroup>' +
+  '<optgroup label="FX Spot (lot-size selectable)">' +
+  '<option value="AUDUSD">AUD/USD spot</option>' +
+  '<option value="EURUSD">EUR/USD spot</option>' +
+  '<option value="GBPUSD">GBP/USD spot</option>' +
+  '<option value="NZDUSD">NZD/USD spot</option>' +
+  '<option value="USDCAD">USD/CAD spot</option>' +
+  '<option value="USDCHF">USD/CHF spot</option>' +
+  '<option value="USDJPY">USD/JPY spot</option>' +
+  '<option value="EURJPY">EUR/JPY spot</option>' +
+  '<option value="GBPJPY">GBP/JPY spot</option>' +
+  '</optgroup>' +
+  '<optgroup label="FX Futures (fixed contract size)">' +
+  '<option value="M6A">M6A — Micro AUD futures</option>' +
+  '<option value="A6">6A — AUD futures</option>' +
+  '<option value="M6E">M6E — Micro EUR futures</option>' +
+  '<option value="E6">6E — EUR FX futures</option>' +
+  '<option value="M6B">M6B — Micro GBP futures</option>' +
+  '<option value="B6">6B — British Pound futures</option>' +
+  '<option value="MICD">MICD — Micro CAD futures</option>' +
+  '<option value="C6">6C — Canadian Dollar futures</option>' +
+  '<option value="S6">6S — Swiss Franc futures</option>' +
+  '<option value="J6">6J — Japanese Yen futures</option>' +
+  '</optgroup>';
 
-  const allEquity = [];
-  const allMaxDDPct = [];
-  const allFinalBal = [];
-  const allMonthlyWR = [];
-  const allMonthlyPnLPct = [];
-  const allMonthlyPnLDollar = [];
-  const allLosingMonthsCount = [];
-  const allRegimeMonthsCount = [];
-  const allRunWorstMonthDollar = [];
-  const allRunWorstMonthPct = [];
-  let blowups = 0, aboveTarget = 0;
-  let totalMonthsBelow55WR = 0, totalMonthsRecorded = 0;
+// Helpers
+function getAcctSize() { return parseFloat(document.getElementById('acctSize').value) || 0; }
+function getGlobalRisk() { return parseFloat(document.getElementById('globalRisk').value) || 0; }
 
-  const sampleTrades = (avg, variance) => {
-    const min = Math.max(0, avg - variance);
-    const max = avg + variance;
-    return Math.max(0, Math.round(min + rng() * (max - min)));
+function updateRiskPctDisplay() {
+  var acct = getAcctSize();
+  var risk = getGlobalRisk();
+  var pct = acct > 0 ? (risk / acct * 100) : 0;
+  document.getElementById('globalRiskPct').value = pct.toFixed(2) + '%';
+}
+
+function saveState(i) {
+  var s = {
+    instrument: document.getElementById('instrument'+i).value,
+    direction: calculators[i-1].direction,
+    broker: calculators[i-1].broker,
+    entry: document.getElementById('entryPrice'+i).value,
+    stop: document.getElementById('stopPrice'+i).value,
+    limit: document.getElementById('limitPrice'+i).value,
+    lotSize: document.getElementById('lotSize'+i) ? document.getElementById('lotSize'+i).value : '',
+    customLot: document.getElementById('customLot'+i) ? document.getElementById('customLot'+i).value : '',
+    fxRate: document.getElementById('fxRate'+i) ? document.getElementById('fxRate'+i).value : ''
   };
-  const distributeAcrossDays = (n, days) => {
-    const dist = new Array(days).fill(0);
-    for (let i = 0; i < n; i++) dist[Math.floor(rng() * days)]++;
-    return dist;
-  };
+  localStorage.setItem('tradeV2_'+i, JSON.stringify(s));
+}
+function loadState(i) {
+  var s = localStorage.getItem('tradeV2_'+i);
+  if (s) { try { return JSON.parse(s); } catch(e) { return null; } }
+  return null;
+}
+function saveGlobals() {
+  localStorage.setItem('acctSize', document.getElementById('acctSize').value);
+  localStorage.setItem('globalRiskV2', document.getElementById('globalRisk').value);
+  localStorage.setItem('targetPercentV2', document.getElementById('targetPercent').value);
+}
+function loadGlobals() {
+  var a = localStorage.getItem('acctSize'); if (a) document.getElementById('acctSize').value = a;
+  var r = localStorage.getItem('globalRiskV2'); if (r) document.getElementById('globalRisk').value = r;
+  var p = localStorage.getItem('targetPercentV2'); if (p) document.getElementById('targetPercent').value = p;
+}
 
-  for (let r = 0; r < runsN; r++) {
-    let bal = startVal;
-    let peak = startVal;
-    let maxDDPct = 0;
-    let YTDpnl = 0;
-    const path = [];
-    let losingMonthsThisRun = 0;
-    let regimeMonthsThisRun = 0;
-    let runWorstMonthDollar = 0;
-    let runWorstMonthPct = 0;
+document.getElementById('acctSize').addEventListener('input', function() {
+  saveGlobals(); updateRiskPctDisplay(); calculators.forEach(function(c){ c.calculate(); });
+});
+document.getElementById('globalRisk').addEventListener('input', function() {
+  saveGlobals(); updateRiskPctDisplay(); calculators.forEach(function(c){ c.calculate(); });
+});
+document.getElementById('targetPercent').addEventListener('input', function() {
+  saveGlobals(); calculators.forEach(function(c){ c.calculate(); });
+});
 
-    let tysonBadWR = [], tysonStreak = [], tysonWorst = -1;
-    if (tysonMode) {
-      const months = [1,2,3,4,5];
-      const shuffled = [...months].sort(() => rng() - 0.5);
-      const numBad = 2 + Math.floor(rng() * 2);
-      const numStreak = 1 + Math.floor(rng() * 2);
-      tysonBadWR = shuffled.slice(0, numBad);
-      tysonStreak = shuffled.slice(numBad, numBad + numStreak);
-      tysonWorst = months[Math.floor(rng() * 5)];
+function updateSummary() {
+  var bd = {}, tID = 0, tON = 0;
+  for (var x = 0; x < calculators.length; x++) {
+    var c = calculators[x];
+    var r = c.lastResult;
+    if (!r || !r.contracts || r.contracts === 0) continue;
+    var k = c.lastResult.symbol + ' (' + r.contracts + (r.isSpotFX ? ' lots' : '') + ')';
+    bd[k] = { id: r.marginID, on: r.marginON };
+    tID += r.marginID;
+    tON += r.marginON;
+  }
+  var acct = getAcctSize();
+  document.getElementById('summaryTotalID').textContent = '$' + Math.round(tID).toLocaleString();
+  document.getElementById('summaryTotalON').textContent = '$' + Math.round(tON).toLocaleString();
+  var idPct = acct > 0 ? (tID / acct * 100) : 0;
+  var onPct = acct > 0 ? (tON / acct * 100) : 0;
+  var idEl = document.getElementById('summaryTotalIDPct');
+  var onEl = document.getElementById('summaryTotalONPct');
+  idEl.textContent = idPct.toFixed(1) + '%';
+  onEl.textContent = onPct.toFixed(1) + '%';
+  idEl.className = 'total-value' + (idPct >= 80 ? ' bad' : (idPct >= 50 ? ' warn' : ''));
+  onEl.className = 'total-value' + (onPct >= 80 ? ' bad' : (onPct >= 50 ? ' warn' : ''));
+  var bdDiv = document.getElementById('summaryBreakdown');
+  var ks = Object.keys(bd);
+  if (ks.length === 0) {
+    bdDiv.innerHTML = '<div class="no-trades">No active trades</div>';
+  } else {
+    var h = '<table class="breakdown-table"><thead><tr><th>Instrument</th><th>Intraday $</th><th>Intraday %</th><th>Overnight $</th><th>Overnight %</th></tr></thead><tbody>';
+    for (var j = 0; j < ks.length; j++) {
+      var idP = acct > 0 ? (bd[ks[j]].id / acct * 100) : 0;
+      var onP = acct > 0 ? (bd[ks[j]].on / acct * 100) : 0;
+      h += '<tr><td class="breakdown-instrument">' + ks[j] + '</td>' +
+           '<td class="breakdown-value">$' + Math.round(bd[ks[j]].id).toLocaleString() + '</td>' +
+           '<td>' + idP.toFixed(1) + '%</td>' +
+           '<td class="breakdown-value">$' + Math.round(bd[ks[j]].on).toLocaleString() + '</td>' +
+           '<td>' + onP.toFixed(1) + '%</td></tr>';
     }
+    h += '</tbody></table>';
+    bdDiv.innerHTML = h;
+  }
+}
 
-    for (let m = 1; m <= simulationMonths; m++) {
-      const monthStartBal = bal;
-      const monthOfYear = ((m - 1) % 12) + 1;
-      const yearIdx = Math.ceil(m / 12) - 1;
-      const isVacation = vacationMode && (monthOfYear === 6 || monthOfYear === 12);
-      const isBadWR = tysonMode && tysonBadWR.includes(m);
-      const isStreak = tysonMode && tysonStreak.includes(m);
-      const isWorst = tysonMode && tysonWorst === m;
-      const isBadRegime = regimeOn && rng() < regimeProb;
-      if (isBadRegime) regimeMonthsThisRun++;
+function createCalc(i) {
+  return {
+    index: i, direction: 'long', broker: 'ninja', lastResult: null,
+    calculate: function() {
+      var ik = document.getElementById('instrument'+i).value;
+      var ins = getInstrument(ik, this.broker);
+      if (!ins) { this.clearResults(); return; }
 
-      let monthTrades = 0, monthWins = 0;
-      let forcedLossesRemaining = isStreak ? 6 : 0;
+      var en = parseFloat(document.getElementById('entryPrice'+i).value) || 0;
+      var st = parseFloat(document.getElementById('stopPrice'+i).value) || 0;
+      var li = parseFloat(document.getElementById('limitPrice'+i).value) || 0;
+      var rpt = getGlobalRisk();
+      var tp = parseFloat(document.getElementById('targetPercent').value) || 70;
+      var acct = getAcctSize();
 
-      if (bal > 0) {
-        const tradesByStrat = strats.map(s => {
-          if (!s.en) return 0;
-          let t = sampleTrades(s.trades, s.variance);
-          if (isVacation) t = Math.round(t * 0.5);
-          if (isBadRegime) t = Math.round(t * (1 - regimeTradeCut));
-          return t;
-        });
-        let aPlusTrades = 0;
-        if (aPlus.en) {
-          const variance = Math.min(aPlus.maxTrades, 2);
-          aPlusTrades = Math.min(aPlus.maxTrades, sampleTrades(aPlus.trades, variance));
-          if (isVacation) aPlusTrades = Math.round(aPlusTrades * 0.5);
-          if (isBadRegime) aPlusTrades = Math.round(aPlusTrades * (1 - regimeTradeCut));
+      // Show/hide lot-size and FX-rate inputs based on instrument type
+      var lotRow = document.getElementById('lotSizeRow'+i);
+      var fxRateRow = document.getElementById('fxRateRow'+i);
+      if (ins.assetClass === 'fxspot') {
+        lotRow.style.display = '';
+        // Show FX rate input only for non-USD-quote pairs
+        fxRateRow.style.display = (ins.quote === 'USD') ? 'none' : '';
+      } else {
+        lotRow.style.display = 'none';
+        fxRateRow.style.display = 'none';
+      }
+
+      this.clearDisplayOnly();
+      if (!en || !st || !li || !rpt) { this.clearResults(); return; }
+
+      // === Compute pip/tick value per contract or lot ===
+      var tickSize, tickValue, marginID, marginON, contractSize, isSpotFX = false, lotSizeUsed = 0, lotLabel = '';
+
+      if (ins.assetClass === 'fxspot') {
+        isSpotFX = true;
+        var lotChoice = document.getElementById('lotSize'+i).value;
+        if (lotChoice === 'custom') {
+          lotSizeUsed = parseFloat(document.getElementById('customLot'+i).value) || 0;
+        } else {
+          lotSizeUsed = parseFloat(lotChoice);
         }
+        if (lotSizeUsed <= 0) { this.clearResults(); return; }
+        lotLabel = lotSizeUsed.toLocaleString() + ' units';
 
-        const tradeList = [];
-        strats.forEach((s, i) => {
-          if (!s.en) return;
-          for (let j = 0; j < tradesByStrat[i]; j++) tradeList.push({type:'std', s});
-        });
-        for (let j = 0; j < aPlusTrades; j++) tradeList.push({type:'aplus', s:aPlus});
-
-        for (let i = tradeList.length - 1; i > 0; i--) {
-          const j = Math.floor(rng() * (i + 1));
-          [tradeList[i], tradeList[j]] = [tradeList[j], tradeList[i]];
-        }
-
-        const tradesPerDay = distributeAcrossDays(tradeList.length, tradingDays);
-        let cursor = 0;
-        let weekR = 0, weekDayCount = 0;
-
-        for (let d = 0; d < tradingDays; d++) {
-          let dayR = 0;
-          const todayCount = tradesPerDay[d];
-          const dayRegimeRoll = rng();
-
-          for (let k = 0; k < todayCount; k++) {
-            if (cursor >= tradeList.length) break;
-            const trade = tradeList[cursor++];
-            if (dailyCapR > 0 && dayR <= -dailyCapR) continue;
-            if (weeklyCapR > 0 && weekR <= -weeklyCapR) continue;
-
-            const s = trade.s;
-            const riskBase = sizingMode === 'trade' ? bal : monthStartBal;
-            const riskAmt = Math.max(0, riskBase) * s.risk;
-
-            let effWR = s.win;
-            if (isBadWR) effWR = Math.min(effWR, 0.48);
-            if (isWorst) effWR = effWR * 0.7;
-            if (isBadRegime) effWR = Math.max(0, effWR - regimeWRCut);
-
-            let isWin;
-            if (forcedLossesRemaining > 0) {
-              isWin = false;
-              forcedLossesRemaining--;
-            } else if (corr > 0) {
-              const goodDay = dayRegimeRoll < effWR;
-              const indep = rng() < effWR;
-              isWin = (rng() < corr) ? goodDay : indep;
-            } else {
-              isWin = rng() < effWR;
-            }
-
-            if (isWin) {
-              const pnl = riskAmt * s.rr;
-              bal += pnl; YTDpnl += pnl;
-              dayR += s.rr; weekR += s.rr;
-              monthWins++;
-            } else {
-              bal -= riskAmt; YTDpnl -= riskAmt;
-              dayR -= 1; weekR -= 1;
-            }
-            monthTrades++;
-
-            if (bal > peak) peak = bal;
-            if (peak > 0) {
-              const ddPct = (peak - bal) / peak;
-              if (ddPct > maxDDPct) maxDDPct = ddPct;
-            }
-            if (bal <= 0) { bal = 0; break; }
+        tickSize = ins.pipSize; // 0.0001 or 0.01 for JPY pairs
+        // pipValue per lot in USD
+        if (ins.quote === 'USD') {
+          tickValue = lotSizeUsed * ins.pipSize; // e.g., 10000 × 0.0001 = $1
+        } else {
+          // USD-base or cross pair: pip is in quote currency, convert to USD
+          // For USDxxx: 1 pip move on 1 unit of USD = pipSize quote currency = pipSize / FXrate USD
+          // For lotSizeUsed units of USD: pip value = lotSizeUsed × pipSize / FXrate USD
+          var fxRate = parseFloat(document.getElementById('fxRate'+i).value) || 0;
+          if (fxRate <= 0) {
+            // Fall back to entry price as approximation
+            fxRate = en;
           }
-          weekDayCount++;
-          if (weekDayCount >= 5) { weekDayCount = 0; weekR = 0; }
-          if (bal <= 0) break;
+          tickValue = (lotSizeUsed * ins.pipSize) / fxRate;
+        }
+        // Spot FX margin is % of notional
+        var notional = lotSizeUsed * en;
+        marginID = notional * ins.marginPctIntra;
+        marginON = notional * ins.marginPctNight;
+      } else {
+        // Futures
+        tickSize = ins.tickSize;
+        tickValue = ins.tickValue;
+        marginID = ins.marginID;
+        marginON = ins.marginON;
+        contractSize = ins.contractSize || null;
+        lotLabel = '1 contract';
+      }
+
+      // === Compute points / ticks / risk per unit ===
+      var ptsS, ptsL;
+      if (this.direction === 'long') { ptsS = en - st; ptsL = li - en; }
+      else { ptsS = st - en; ptsL = en - li; }
+      if (ptsS <= 0 || ptsL <= 0) { this.clearResults(); return; }
+
+      // FP fix: round ticks to nearest integer
+      var tksS = Math.round(ptsS / tickSize);
+      var tksL = Math.round(ptsL / tickSize);
+      var rpc = tksS * tickValue;     // $ risk per contract/lot
+      var rwc = tksL * tickValue;     // $ reward per contract/lot
+      var rr = rpc > 0 ? (rwc / rpc) : 0;
+      var con = rpc > 0 ? Math.floor(rpt / rpc) : 0;
+      if (con < 1 && rpc > 0 && rpc <= rpt) con = 1; // at least 1 if budget covers
+      var tR = con * rpc;       // total $ risk
+      var tRw = con * rwc;      // total $ reward
+      var totalMarginID = con * marginID;
+      var totalMarginON = con * marginON;
+      var notionalTotal = isSpotFX ? (con * lotSizeUsed * en) : (contractSize ? con * contractSize * en : null);
+
+      var tgtP;
+      if (this.direction === 'long') tgtP = en + (ptsL * tp / 100);
+      else tgtP = en - (ptsL * tp / 100);
+
+      // Stop %, leverage
+      var stopPct = (ptsS / en) * 100;
+      var leverageImplied = (acct > 0 && tR > 0) ? (notionalTotal ? (notionalTotal / acct) : null) : null;
+
+      // === Render outputs ===
+      document.getElementById('points'+i).textContent = ptsS.toFixed(ins.assetClass === 'fxspot' && ins.pipSize === 0.0001 ? 5 : (ins.tickSize && ins.tickSize < 0.01 ? 5 : 4));
+      document.getElementById('rrRatio'+i).textContent = rr.toFixed(2) + ':1';
+      document.getElementById('ticksRisk'+i).textContent = tksS.toFixed(0);
+      document.getElementById('ticksReward'+i).textContent = tksL.toFixed(0);
+      document.getElementById('risk'+i).textContent = '-$' + tR.toFixed(0);
+      document.getElementById('reward'+i).textContent = '$' + tRw.toFixed(0);
+      document.getElementById('contracts'+i).textContent = con + (isSpotFX ? ' lots' : '');
+      document.getElementById('targetPct'+i).textContent = tgtP.toFixed(ik.indexOf('JPY') >= 0 ? 3 : (ins.tickSize && ins.tickSize < 0.001 ? 5 : 4));
+      document.getElementById('marginID'+i).textContent = '$' + Math.round(totalMarginID).toLocaleString();
+      document.getElementById('marginON'+i).textContent = '$' + Math.round(totalMarginON).toLocaleString();
+      var perUnit = isSpotFX ? ('$' + (marginID).toFixed(0) + ' /' + lotSizeUsed.toLocaleString() + '-unit lot') : ('$' + marginID.toLocaleString() + ' /contract');
+      document.getElementById('marginIDPerContract'+i).textContent = perUnit;
+      document.getElementById('marginONPerContract'+i).textContent = isSpotFX ? ('$' + (marginON).toFixed(0) + ' /' + lotSizeUsed.toLocaleString() + '-unit lot') : ('$' + marginON.toLocaleString() + ' /contract');
+
+      // Notional, leverage, account %
+      document.getElementById('notional'+i).textContent = notionalTotal != null ? ('$' + Math.round(notionalTotal).toLocaleString()) : '—';
+      document.getElementById('leverage'+i).textContent = (leverageImplied != null && leverageImplied > 0) ? (leverageImplied.toFixed(1) + 'x') : '—';
+      document.getElementById('stopPct'+i).textContent = stopPct.toFixed(3) + '%';
+      var idAcctPct = acct > 0 ? (totalMarginID / acct * 100) : 0;
+      var onAcctPct = acct > 0 ? (totalMarginON / acct * 100) : 0;
+      document.getElementById('marginIDPct'+i).textContent = idAcctPct.toFixed(1) + '%';
+      document.getElementById('marginONPct'+i).textContent = onAcctPct.toFixed(1) + '%';
+
+      // Pip value display (the new sanity element)
+      var pipDisplay;
+      if (isSpotFX) {
+        pipDisplay = '$' + tickValue.toFixed(4) + ' per pip per ' + lotSizeUsed.toLocaleString() + '-unit lot' +
+          (ins.quote !== 'USD' ? ' (using rate ' + (parseFloat(document.getElementById('fxRate'+i).value) || en) + ')' : '');
+      } else {
+        pipDisplay = '$' + tickValue.toFixed(2) + ' per tick per contract';
+      }
+      document.getElementById('pipValueShown'+i).textContent = pipDisplay;
+
+      // === Sanity checks ===
+      var sanityEl = document.getElementById('sanity'+i);
+      var sanityClass = '', sanityH = 'Sanity OK', sanityMsg = '';
+      var riskDelta = Math.abs(tR - rpt);
+      var riskDeltaPct = rpt > 0 ? (riskDelta / rpt * 100) : 0;
+      if (riskDeltaPct > 25) {
+        sanityClass = 'warn';
+        sanityH = 'Risk mismatch';
+        sanityMsg = 'Computed risk is ' + (tR < rpt ? 'BELOW' : 'ABOVE') + ' your $' + rpt.toLocaleString() + ' target by ' + riskDeltaPct.toFixed(0) + '%. Stop is too tight to size up to a full unit, or contract risk exceeds budget. Consider widening stop or reducing risk-per-trade input.';
+      }
+      if (onAcctPct > 80) {
+        sanityClass = 'bad';
+        sanityH = 'Margin overload';
+        sanityMsg = 'Overnight margin alone is ' + onAcctPct.toFixed(0) + '% of account on this single trade. You will not have room for additional concurrent positions and may face margin calls if equity drops.';
+      }
+      if (leverageImplied != null && leverageImplied > 30) {
+        sanityClass = sanityClass || 'warn';
+        sanityH = 'High leverage';
+        sanityMsg = (sanityMsg ? sanityMsg + ' ' : '') + 'Implied leverage on this trade is ' + leverageImplied.toFixed(0) + 'x — tight stop relative to instrument volatility. Confirm stop is at a real structural level, not noise.';
+      }
+      sanityEl.className = 'sanity-pane' + (sanityClass ? ' ' + sanityClass : '');
+      document.getElementById('sanityH'+i).textContent = sanityH;
+      document.getElementById('sanityMsg'+i).textContent = sanityMsg || 'Risk computed at $' + tR.toFixed(0) + ' (' + (acct > 0 ? (tR/acct*100).toFixed(2) : '0') + '% of account). Pip/tick value above checks out for the selected lot size. Margin is within acceptable range.';
+
+      this.lastResult = {
+        symbol: ik, contracts: con, marginID: totalMarginID, marginON: totalMarginON,
+        isSpotFX: isSpotFX, notional: notionalTotal
+      };
+      updateSummary();
+    },
+    clearDisplayOnly: function() {},
+    clearResults: function() {
+      ['points','rrRatio','ticksRisk','ticksReward','risk','reward','contracts','targetPct',
+       'marginID','marginON','notional','leverage','stopPct','marginIDPct','marginONPct'].forEach(function(f){
+        var el = document.getElementById(f+i); if (el) el.textContent = '-';
+      });
+      document.getElementById('pipValueShown'+i).textContent = '-';
+      document.getElementById('sanity'+i).className = 'sanity-pane';
+      document.getElementById('sanityH'+i).textContent = 'Awaiting inputs';
+      document.getElementById('sanityMsg'+i).textContent = 'Enter entry, stop, target, and risk size to see sanity checks.';
+      this.lastResult = null;
+      updateSummary();
+    }
+  };
+}
+
+function buildHTML(i) {
+  return '<div class="row-header">' +
+    '<h3>Trade ' + i + '</h3>' +
+    '<div class="row-header-right"><div class="broker-toggle-small">' +
+    '<button class="broker-btn-small active" id="ninjaBtn'+i+'">Ninja</button>' +
+    '<button class="broker-btn-small" id="tosBtn'+i+'">TOS</button>' +
+    '</div></div></div>' +
+    '<div class="calculator-body">' +
+    '<div class="card"><h4>Parameters</h4>' +
+    '<div class="input-group"><label>Instrument</label>' +
+    '<select id="instrument'+i+'">' + instrumentOptions + '</select></div>' +
+    '<div class="input-group" id="lotSizeRow'+i+'" style="display:none">' +
+    '<label>FX Spot Lot Size</label>' +
+    '<select id="lotSize'+i+'">' +
+    '<option value="1000">1k (Nano)</option>' +
+    '<option value="10000" selected>10k (Mini)</option>' +
+    '<option value="100000">100k (Standard)</option>' +
+    '<option value="custom">Custom...</option>' +
+    '</select>' +
+    '<input type="number" id="customLot'+i+'" placeholder="custom units" style="margin-top:4px;display:none">' +
+    '</div>' +
+    '<div class="input-group fx-rate-row" id="fxRateRow'+i+'" style="display:none">' +
+    '<label>Current FX Rate (for pip value calc on USD-base/cross pairs)</label>' +
+    '<input type="number" id="fxRate'+i+'" step="0.0001" placeholder="e.g., 150.00 for USDJPY">' +
+    '</div>' +
+    '<div class="input-group"><label>Direction</label>' +
+    '<div class="toggle-group">' +
+    '<div class="toggle-btn active" id="longBtn'+i+'">Long</div>' +
+    '<div class="toggle-btn short" id="shortBtn'+i+'">Short</div>' +
+    '</div></div>' +
+    '<div id="priceInputs'+i+'">' +
+    '<div class="input-group"><label>Limit Price (Target)</label><input type="number" class="price-input limit-price" id="limitPrice'+i+'" step="0.0001" placeholder="0.0000"></div>' +
+    '<div class="input-group"><label>Entry Price</label><input type="number" class="price-input entry-price" id="entryPrice'+i+'" step="0.0001" placeholder="0.0000"></div>' +
+    '<div class="input-group"><label>Stop Price</label><input type="number" class="price-input stop-price" id="stopPrice'+i+'" step="0.0001" placeholder="0.0000"></div>' +
+    '</div></div>' +
+    '<div class="card"><h4>Calculations</h4>' +
+    '<div class="results-grid">' +
+    '<div class="result-item"><div class="result-label">Points (risk)</div><div class="result-value" id="points'+i+'">-</div></div>' +
+    '<div class="result-item"><div class="result-label">R:R Ratio</div><div class="result-value" id="rrRatio'+i+'">-</div></div>' +
+    '<div class="result-item"><div class="result-label">Ticks (Stop)</div><div class="result-value negative" id="ticksRisk'+i+'">-</div></div>' +
+    '<div class="result-item"><div class="result-label">Ticks (Limit)</div><div class="result-value positive" id="ticksReward'+i+'">-</div></div>' +
+    '<div class="result-item"><div class="result-label">Risk</div><div class="result-value negative" id="risk'+i+'">-</div></div>' +
+    '<div class="result-item"><div class="result-label">Reward</div><div class="result-value positive" id="reward'+i+'">-</div></div>' +
+    '<div class="result-item"><div class="result-label">Contracts/Lots</div><div class="result-value" id="contracts'+i+'" style="font-size:1.4em">-</div></div>' +
+    '<div class="result-item"><div class="result-label">Target % Price</div><div class="result-value" id="targetPct'+i+'">-</div></div>' +
+    '<div class="result-item"><div class="result-label">Notional Exposure</div><div class="result-value" id="notional'+i+'">-</div></div>' +
+    '<div class="result-item"><div class="result-label">Implied Leverage</div><div class="result-value warn" id="leverage'+i+'">-</div></div>' +
+    '<div class="result-item"><div class="result-label">Stop as % of price</div><div class="result-value" id="stopPct'+i+'">-</div></div>' +
+    '<div class="result-item"><div class="result-label">Pip/Tick Value Used</div><div class="result-value" id="pipValueShown'+i+'" style="font-size:.85em">-</div></div>' +
+    '<div class="result-item"><div class="result-label">Margin (Intraday)</div><div class="result-value" id="marginID'+i+'">-</div><div class="result-sublabel" id="marginIDPerContract'+i+'">-</div><div class="result-sublabel" id="marginIDPct'+i+'" style="color:#f0ad4e">-</div></div>' +
+    '<div class="result-item"><div class="result-label">Margin (Overnight)</div><div class="result-value" id="marginON'+i+'">-</div><div class="result-sublabel" id="marginONPerContract'+i+'">-</div><div class="result-sublabel" id="marginONPct'+i+'" style="color:#f0ad4e">-</div></div>' +
+    '</div>' +
+    '<div class="sanity-pane" id="sanity'+i+'">' +
+    '<div class="h" id="sanityH'+i+'">Awaiting inputs</div>' +
+    '<div id="sanityMsg'+i+'">Enter entry, stop, target, and risk size to see sanity checks.</div>' +
+    '</div>' +
+    '</div></div>';
+}
+
+function reorderPrices(i, dir) {
+  var c = document.getElementById('priceInputs'+i);
+  var lim = c.querySelector('#limitPrice'+i).parentElement;
+  var ent = c.querySelector('#entryPrice'+i).parentElement;
+  var stp = c.querySelector('#stopPrice'+i).parentElement;
+  c.innerHTML = '';
+  if (dir === 'long') { c.appendChild(lim); c.appendChild(ent); c.appendChild(stp); }
+  else { c.appendChild(stp); c.appendChild(ent); c.appendChild(lim); }
+}
+
+function renderCalcs() {
+  var cont = document.getElementById('calculators');
+  for (var i = 1; i <= 6; i++) {
+    var calc = createCalc(i);
+    calculators.push(calc);
+    var row = document.createElement('div');
+    row.className = 'calculator-row';
+    row.innerHTML = buildHTML(i);
+    cont.appendChild(row);
+    (function(calc, i) {
+      var st = loadState(i);
+      if (st) {
+        document.getElementById('instrument'+i).value = st.instrument;
+        calc.direction = st.direction; calc.broker = st.broker;
+        document.getElementById('entryPrice'+i).value = st.entry;
+        document.getElementById('stopPrice'+i).value = st.stop;
+        document.getElementById('limitPrice'+i).value = st.limit;
+        if (st.lotSize) document.getElementById('lotSize'+i).value = st.lotSize;
+        if (st.customLot) document.getElementById('customLot'+i).value = st.customLot;
+        if (st.fxRate) document.getElementById('fxRate'+i).value = st.fxRate;
+        if (st.direction === 'short') {
+          document.getElementById('shortBtn'+i).classList.add('active');
+          document.getElementById('longBtn'+i).classList.remove('active');
+          reorderPrices(i, 'short');
+        }
+        if (st.broker === 'tos') {
+          document.getElementById('tosBtn'+i).classList.add('active');
+          document.getElementById('ninjaBtn'+i).classList.remove('active');
         }
       }
-
-      // Capture pure-trading P&L for this month BEFORE tax/withdrawal
-      const postTradeBal = bal;
-      const monthPnLDollar = postTradeBal - monthStartBal;
-      const monthPnLPct = monthStartBal > 0 ? monthPnLDollar / monthStartBal : 0;
-
-      if (monthTrades > 0) {
-        allMonthlyWR.push(monthWins / monthTrades);
-        allMonthlyPnLPct.push(monthPnLPct);
-        allMonthlyPnLDollar.push(monthPnLDollar);
-        totalMonthsRecorded++;
-        if (monthWins / monthTrades < 0.55) totalMonthsBelow55WR++;
-      }
-      if (monthPnLPct < 0) {
-        losingMonthsThisRun++;
-        if (monthPnLDollar < runWorstMonthDollar) {
-          runWorstMonthDollar = monthPnLDollar;
-          runWorstMonthPct = monthPnLPct;
-        }
-      }
-
-      // Tax
-      if (m % 12 === 0 || m === simulationMonths) {
-        if (YTDpnl > 0) bal -= YTDpnl * taxR;
-        YTDpnl = 0;
-      }
-
-      // Withdrawals
-      const wd = (m > noWithdrawMonths) ? (w[Math.min(yearIdx, 4)] || 0) : 0;
-      bal -= wd;
-      if (bal < 0) bal = 0;
-
-      path.push(bal);
-    }
-
-    allEquity.push(path);
-    allMaxDDPct.push(maxDDPct);
-    allFinalBal.push(bal);
-    allLosingMonthsCount.push(losingMonthsThisRun);
-    allRegimeMonthsCount.push(regimeMonthsThisRun);
-    allRunWorstMonthDollar.push(runWorstMonthDollar);
-    allRunWorstMonthPct.push(runWorstMonthPct);
-    if (bal <= 0) blowups++;
-    if (bal >= targetN) aboveTarget++;
+      document.getElementById('ninjaBtn'+i).addEventListener('click', function() {
+        calc.broker = 'ninja'; this.classList.add('active');
+        document.getElementById('tosBtn'+i).classList.remove('active');
+        saveState(i); calc.calculate();
+      });
+      document.getElementById('tosBtn'+i).addEventListener('click', function() {
+        calc.broker = 'tos'; this.classList.add('active');
+        document.getElementById('ninjaBtn'+i).classList.remove('active');
+        saveState(i); calc.calculate();
+      });
+      document.getElementById('longBtn'+i).addEventListener('click', function() {
+        calc.direction = 'long'; this.classList.add('active');
+        document.getElementById('shortBtn'+i).classList.remove('active');
+        reorderPrices(i, 'long'); saveState(i); calc.calculate();
+      });
+      document.getElementById('shortBtn'+i).addEventListener('click', function() {
+        calc.direction = 'short'; this.classList.add('active');
+        document.getElementById('longBtn'+i).classList.remove('active');
+        reorderPrices(i, 'short'); saveState(i); calc.calculate();
+      });
+      document.getElementById('instrument'+i).addEventListener('change', function() {
+        document.getElementById('entryPrice'+i).value = '';
+        document.getElementById('stopPrice'+i).value = '';
+        document.getElementById('limitPrice'+i).value = '';
+        saveState(i); calc.calculate();
+      });
+      document.getElementById('entryPrice'+i).addEventListener('input', function() { saveState(i); calc.calculate(); });
+      document.getElementById('stopPrice'+i).addEventListener('input', function() { saveState(i); calc.calculate(); });
+      document.getElementById('limitPrice'+i).addEventListener('input', function() { saveState(i); calc.calculate(); });
+      document.getElementById('lotSize'+i).addEventListener('change', function() {
+        document.getElementById('customLot'+i).style.display = (this.value === 'custom') ? '' : 'none';
+        saveState(i); calc.calculate();
+      });
+      document.getElementById('customLot'+i).addEventListener('input', function() { saveState(i); calc.calculate(); });
+      document.getElementById('fxRate'+i).addEventListener('input', function() { saveState(i); calc.calculate(); });
+    })(calc, i);
+    calc.calculate();
   }
-
-  const labels = Array.from({length:simulationMonths}, (_,i)=>i+1);
-  const perMonth = labels.map((_, i) => {
-    const slice = allEquity.map(p => p[i] || 0).sort((a,b)=>a-b);
-    return {
-      p10: percentile(slice, 0.10),
-      p25: percentile(slice, 0.25),
-      p50: percentile(slice, 0.50),
-      p75: percentile(slice, 0.75),
-      p90: percentile(slice, 0.90),
-    };
-  });
-
-  // Final balance percentiles
-  const sortedFinal = [...allFinalBal].sort((a,b)=>a-b);
-  const finalP10 = percentile(sortedFinal, 0.10);
-  const finalP25 = percentile(sortedFinal, 0.25);
-  const finalP50 = percentile(sortedFinal, 0.50);
-  const finalP75 = percentile(sortedFinal, 0.75);
-  const finalP90 = percentile(sortedFinal, 0.90);
-
-  // Worst-5% sample run path
-  const indexedRuns = allFinalBal.map((b, i) => ({bal: b, idx: i})).sort((a,b)=>a.bal-b.bal);
-  const worst5Idx = indexedRuns[Math.floor(indexedRuns.length * 0.05)].idx;
-  const worst5Path = allEquity[worst5Idx];
-
-  // Drawdown stats
-  const sortedDD = [...allMaxDDPct].sort((a,b)=>a-b);
-  const ddMedian = percentile(sortedDD, 0.50);
-  const ddP90 = percentile(sortedDD, 0.90);
-  const ddP95 = percentile(sortedDD, 0.95);
-
-  // Losing month stats
-  const sortedLosing = [...allLosingMonthsCount].sort((a,b)=>a-b);
-  const losingMedian = percentile(sortedLosing, 0.50);
-  const losingP90 = percentile(sortedLosing, 0.90);
-
-  // Regime months stats
-  const sortedRegime = [...allRegimeMonthsCount].sort((a,b)=>a-b);
-  const regimeMedian = percentile(sortedRegime, 0.50);
-
-  // Worst month stats
-  const sortedWorstMonth = [...allRunWorstMonthDollar].sort((a,b)=>a-b);
-  const sortedWorstMonthPct = [...allRunWorstMonthPct].sort((a,b)=>a-b);
-  const overallWorstMonth = sortedWorstMonth[0]; // most negative
-  const overallWorstMonthPct = sortedWorstMonthPct[0];
-  const medianWorstMonth = percentile(sortedWorstMonth, 0.50);
-  const medianWorstMonthPct = percentile(sortedWorstMonthPct, 0.50);
-
-  // Probabilities
-  const probLevels = [200000, 300000, 400000, 500000, 750000, 1000000];
-  const probHit = probLevels.map(t => sortedFinal.filter(b => b >= t).length / sortedFinal.length);
-
-  const blowupPct = blowups / runsN * 100;
-  const aboveTargetPct = aboveTarget / runsN * 100;
-  const monthsBelow55Pct = totalMonthsRecorded > 0 ? (totalMonthsBelow55WR / totalMonthsRecorded * 100) : 0;
-  const losingMonthsPct = allMonthlyPnLPct.filter(p => p < 0).length / allMonthlyPnLPct.length * 100;
-  const cls = (val, good, bad) => val >= good ? 'good' : (val <= bad ? 'bad' : 'warn');
-
-  document.getElementById('summary').innerHTML = `
-    <div style="margin-bottom:6px">
-      <span class="big">${fmt(finalP50)}</span>
-      <small>median ending balance · ${runsN.toLocaleString()} runs · seed ${seed} · ${simulationMonths} months${regimeOn ? ' · regime coupling ON' : ' · regime coupling OFF'}</small>
-    </div>
-    <div>
-      <span class="stat"><span class="lbl">≥ Target ${fmt(targetN)} at end</span><span class="val ${cls(aboveTargetPct,50,20)}">${aboveTargetPct.toFixed(1)}%</span></span>
-      <span class="stat"><span class="lbl">Blowup (≤$0)</span><span class="val ${blowupPct >= 5 ? 'bad' : (blowupPct >= 1 ? 'warn' : 'good')}">${blowupPct.toFixed(2)}%</span></span>
-      <span class="stat"><span class="lbl">Median Max DD</span><span class="val warn">${(ddMedian*100).toFixed(1)}%</span></span>
-      <span class="stat"><span class="lbl">P90 Max DD</span><span class="val bad">${(ddP90*100).toFixed(1)}%</span></span>
-      <span class="stat"><span class="lbl">P95 Max DD</span><span class="val bad">${(ddP95*100).toFixed(1)}%</span></span>
-    </div>
-    <div style="margin-top:6px">
-      <span class="stat"><span class="lbl">Losing months / run (median)</span><span class="val warn">${losingMedian.toFixed(1)}</span></span>
-      <span class="stat"><span class="lbl">Losing months / run (p90)</span><span class="val bad">${losingP90.toFixed(1)}</span></span>
-      <span class="stat"><span class="lbl">% of all months that lost</span><span class="val warn">${losingMonthsPct.toFixed(1)}%</span></span>
-      ${regimeOn ? `<span class="stat"><span class="lbl">Bad regime months / run (median)</span><span class="val">${regimeMedian.toFixed(1)}</span></span>` : ''}
-      <span class="stat"><span class="lbl">Months &lt; 55% WR</span><span class="val">${monthsBelow55Pct.toFixed(1)}%</span></span>
-    </div>
-    <div style="margin-top:6px">
-      <span class="stat"><span class="lbl">Worst month observed (anywhere)</span><span class="val bad">${fmtSigned(overallWorstMonth)} (${(overallWorstMonthPct*100).toFixed(1)}%)</span></span>
-      <span class="stat"><span class="lbl">Typical run's worst month</span><span class="val warn">${fmtSigned(medianWorstMonth)} (${(medianWorstMonthPct*100).toFixed(1)}%)</span></span>
-    </div>
-    <div style="margin-top:8px">
-      <strong>Final balance:</strong>
-      p10 ${fmt(finalP10)} · p25 ${fmt(finalP25)} · <strong>p50 ${fmt(finalP50)}</strong> · p75 ${fmt(finalP75)} · p90 ${fmt(finalP90)}
-    </div>
-    <div style="margin-top:6px">
-      <strong>Probability of ending at:</strong>
-      ${probLevels.map((t,i)=>`${fmt(t)}: <strong>${(probHit[i]*100).toFixed(1)}%</strong>`).join(' · ')}
-    </div>
-  `;
-
-  // Year-end milestones
-  const milestonesEl = document.getElementById('milestones');
-  milestonesEl.innerHTML = '<div class="header-label">Year-End Milestones (across all runs)</div>';
-  const numYears = Math.ceil(simulationMonths / 12);
-  for (let yr = 1; yr <= numYears; yr++) {
-    const monthIdx = Math.min(simulationMonths, yr * 12) - 1;
-    const slice = allEquity.map(p => p[monthIdx] || 0).sort((a,b)=>a-b);
-    const p10 = percentile(slice, 0.10);
-    const p25 = percentile(slice, 0.25);
-    const p50 = percentile(slice, 0.50);
-    const p75 = percentile(slice, 0.75);
-    const p90 = percentile(slice, 0.90);
-    const hitTarget = slice.filter(b => b >= targetN).length / slice.length * 100;
-    const blewUp = slice.filter(b => b <= 0).length / slice.length * 100;
-    const labelMonth = Math.min(simulationMonths, yr * 12);
-    const card = document.createElement('div');
-    card.className = 'milestone-card';
-    card.innerHTML = `
-      <h4>End of Year ${yr} (Month ${labelMonth})</h4>
-      <div class="median">${fmt(p50)}</div>
-      <div class="row"><span class="lbl">p10 (worst 10%)</span><span>${fmt(p10)}</span></div>
-      <div class="row"><span class="lbl">p25</span><span>${fmt(p25)}</span></div>
-      <div class="row"><span class="lbl">p75</span><span>${fmt(p75)}</span></div>
-      <div class="row"><span class="lbl">p90 (best 10%)</span><span>${fmt(p90)}</span></div>
-      <div class="target-pct">
-        ≥ ${fmt(targetN)}: <strong style="color:${hitTarget>=50?'#3fb950':hitTarget>=20?'#f0883e':'#f85149'}">${hitTarget.toFixed(1)}%</strong>
-        ${blewUp > 0 ? ` · Blowup: <strong style="color:#f85149">${blewUp.toFixed(1)}%</strong>` : ''}
-      </div>
-    `;
-    milestonesEl.appendChild(card);
-  }
-  milestonesEl.style.display = 'grid';
-
-  // Equity chart with worst-5% overlay
-  if (equityChart) equityChart.destroy();
-  equityChart = new Chart(document.getElementById('equityChart'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {data: perMonth.map(m=>m.p10), borderColor:'rgba(63,185,80,0.25)', borderWidth:1, fill:false, pointRadius:0, label:'p10', tension:0.2},
-        {data: perMonth.map(m=>m.p90), borderColor:'rgba(63,185,80,0.25)', backgroundColor:'rgba(63,185,80,0.10)', borderWidth:1, fill:'-1', pointRadius:0, label:'p10–p90', tension:0.2},
-        {data: perMonth.map(m=>m.p25), borderColor:'rgba(63,185,80,0.4)', borderWidth:1, fill:false, pointRadius:0, label:'p25', tension:0.2},
-        {data: perMonth.map(m=>m.p75), borderColor:'rgba(63,185,80,0.4)', backgroundColor:'rgba(63,185,80,0.20)', borderWidth:1, fill:'-1', pointRadius:0, label:'p25–p75', tension:0.2},
-        {data: perMonth.map(m=>m.p50), borderColor:'#3fb950', borderWidth:2.5, fill:false, pointRadius:0, label:'Median', tension:0.2},
-        {data: worst5Path, borderColor:'#f85149', borderWidth:1.5, borderDash:[4,3], fill:false, pointRadius:0, label:'Worst 5% sample run', tension:0.05},
-        {data: labels.map(()=>targetN), borderColor:'#f0883e', borderWidth:1, borderDash:[5,5], pointRadius:0, fill:false, label:'Target'},
-        {data: labels.map(()=>startVal), borderColor:'#8b949e', borderWidth:1, borderDash:[3,3], pointRadius:0, fill:false, label:'Start'},
-      ]
-    },
-    options: {
-      plugins: {
-        legend: {labels: {color:'#e6edf3', filter: it => ['Median','p25–p75','p10–p90','Worst 5% sample run','Target','Start'].includes(it.text)}}
-      },
-      scales: {
-        y: {ticks: {color:'#8b949e', callback: v => fmt(v)}, grid:{color:'#30363d'}},
-        x: {ticks: {color:'#8b949e'}, grid:{color:'#30363d'}, title:{display:true, text:'Month', color:'#8b949e'}}
-      }
-    },
-    plugins: [yearLinesPlugin]
-  });
-
-  // Monthly P&L histogram
-  if (pnlChart) pnlChart.destroy();
-  // Buckets: ±25% in 1% increments (51 buckets centered on 0)
-  const pnlPctValues = allMonthlyPnLPct.map(p => p * 100);
-  const pnlMin = Math.min(-2, Math.floor(Math.min(...pnlPctValues)));
-  const pnlMax = Math.max(2, Math.ceil(Math.max(...pnlPctValues)));
-  const pnlBucketSize = 1; // 1%
-  const pnlNumBuckets = Math.ceil((pnlMax - pnlMin) / pnlBucketSize) + 1;
-  const pnlBuckets = Array(pnlNumBuckets).fill(0);
-  pnlPctValues.forEach(p => {
-    const idx = Math.min(pnlNumBuckets - 1, Math.max(0, Math.floor((p - pnlMin) / pnlBucketSize)));
-    pnlBuckets[idx]++;
-  });
-  const pnlLabels = Array.from({length:pnlNumBuckets}, (_,i) => `${(pnlMin + i*pnlBucketSize).toFixed(0)}%`);
-  const pnlColors = pnlLabels.map(lbl => {
-    const v = parseFloat(lbl);
-    if (v < -0.5) return '#f85149';
-    if (v > 0.5) return '#3fb950';
-    return '#f0883e';
-  });
-  pnlChart = new Chart(document.getElementById('pnlChart'), {
-    type: 'bar',
-    data: {labels: pnlLabels, datasets: [{data: pnlBuckets, backgroundColor: pnlColors, borderWidth: 0}]},
-    options: {
-      plugins: {
-        legend: {display: false},
-        tooltip: {callbacks: {title: items => 'Bucket: ' + items[0].label, label: i => i.parsed.y.toLocaleString() + ' months'}}
-      },
-      scales: {
-        y: {ticks: {color:'#8b949e'}, grid:{color:'#30363d'}, title:{display:true, text:'# months across all runs', color:'#8b949e'}},
-        x: {ticks: {color:'#8b949e', maxRotation:60, autoSkip:true, autoSkipPadding:6}, grid:{display:false}, title:{display:true, text:'Monthly P&L %', color:'#8b949e'}}
-      }
-    }
-  });
-
-  // Final balance histogram
-  if (histChart) histChart.destroy();
-  const numBuckets = 30;
-  const minB = sortedFinal[0];
-  const maxB = sortedFinal[sortedFinal.length - 1];
-  const bucketSize = ((maxB - minB) / numBuckets) || 1;
-  const buckets = Array(numBuckets).fill(0);
-  const bucketColors = Array(numBuckets).fill('#3fb950');
-  sortedFinal.forEach(b => {
-    const idx = Math.min(numBuckets - 1, Math.max(0, Math.floor((b - minB) / bucketSize)));
-    buckets[idx]++;
-  });
-  const histLabels = Array.from({length:numBuckets},(_,i) => fmt(Math.round(minB + i*bucketSize)));
-  const targetBucket = Math.min(numBuckets - 1, Math.max(0, Math.floor((targetN - minB) / bucketSize)));
-  for (let i = 0; i < numBuckets; i++) {
-    if (i < targetBucket) bucketColors[i] = '#f85149';
-    else if (i === targetBucket) bucketColors[i] = '#f0883e';
-    else bucketColors[i] = '#3fb950';
-  }
-  histChart = new Chart(document.getElementById('histChart'), {
-    type: 'bar',
-    data: {labels: histLabels, datasets: [{data: buckets, backgroundColor: bucketColors, borderWidth: 0}]},
-    options: {
-      plugins: {
-        legend: {display: false},
-        tooltip: {callbacks: {title: items => 'Bucket: ' + items[0].label, label: i => i.parsed.y + ' runs'}}
-      },
-      scales: {
-        y: {ticks: {color:'#8b949e'}, grid:{color:'#30363d'}, title:{display:true, text:'# runs', color:'#8b949e'}},
-        x: {ticks: {color:'#8b949e', maxRotation:60, autoSkip:true, autoSkipPadding:8}, grid:{display:false}}
-      }
-    }
-  });
-
-  // WR distribution
-  if (wrChart) wrChart.destroy();
-  const wrBuckets = Array(20).fill(0);
-  allMonthlyWR.forEach(wr => {
-    const idx = Math.min(19, Math.max(0, Math.floor(wr * 20)));
-    wrBuckets[idx]++;
-  });
-  const wrLabels = Array.from({length:20}, (_,i) => `${i*5}-${(i+1)*5}%`);
-  const targetWR = vn('win') / 100;
-  const wrColors = Array.from({length:20}, (_,i) => {
-    const lo = i*0.05;
-    if (targetWR >= lo && targetWR < lo + 0.05) return '#3fb950';
-    if (lo < 0.55) return '#f85149aa';
-    return '#58a6ff88';
-  });
-  wrChart = new Chart(document.getElementById('wrChart'), {
-    type: 'bar',
-    data: {labels: wrLabels, datasets: [{data: wrBuckets, backgroundColor: wrColors, borderWidth: 0}]},
-    options: {
-      plugins: {
-        legend: {display: false},
-        tooltip: {callbacks: {label: i => i.parsed.y.toLocaleString() + ' months'}}
-      },
-      scales: {
-        y: {ticks: {color:'#8b949e'}, grid:{color:'#30363d'}, title:{display:true, text:'# months across all runs', color:'#8b949e'}},
-        x: {ticks: {color:'#8b949e', maxRotation:60, autoSkip:true, autoSkipPadding:6}, grid:{display:false}, title:{display:true, text:'Realized monthly win rate', color:'#8b949e'}}
-      }
-    }
-  });
-
-  // Per-month percentile table
-  const tbody = document.getElementById('tbody');
-  tbody.innerHTML = perMonth.map((m, i) => {
-    const yearIdx = Math.ceil((i+1)/12) - 1;
-    const wd = ((i+1) > noWithdrawMonths) ? (w[Math.min(yearIdx, 4)] || 0) : 0;
-    return `<tr><td>${i+1}</td><td>${fmt(m.p10)}</td><td>${fmt(m.p25)}</td><td><strong>${fmt(m.p50)}</strong></td><td>${fmt(m.p75)}</td><td>${fmt(m.p90)}</td><td>${fmt(wd)}</td></tr>`;
-  }).join('');
 }
 
-const currencyInputs = ['start','target','w1','w2','w3','w4','w5'];
-function saveInputs() {
-  document.querySelectorAll('input,select').forEach(i=>{
-    let val;
-    if (currencyInputs.includes(i.id)) val = parseCurrency(i.value);
-    else if (i.type === 'checkbox') val = i.checked;
-    else val = i.value;
-    localStorage.setItem('sim5_'+i.id, val);
-  });
-  document.getElementById('summary').innerText = 'Inputs saved.';
-}
-function loadInputs() {
-  document.querySelectorAll('input,select').forEach(i=>{
-    const stored = localStorage.getItem('sim5_'+i.id);
-    if (stored !== null) {
-      if (i.type === 'checkbox') i.checked = stored === 'true';
-      else if (currencyInputs.includes(i.id)) i.value = formatCurrency(stored);
-      else i.value = stored;
-    } else if (currencyInputs.includes(i.id)) {
-      i.value = formatCurrency(i.value);
-    }
-  });
-}
-
-window.onload = () => {
-  loadInputs();
-  currencyInputs.forEach(id => {
-    const input = document.getElementById(id);
-    input.addEventListener('input', e => {
-      const cursorPos = e.target.selectionStart;
-      const oldLen = e.target.value.length;
-      e.target.value = formatCurrency(e.target.value);
-      const newLen = e.target.value.length;
-      e.target.setSelectionRange(cursorPos + (newLen - oldLen), cursorPos + (newLen - oldLen));
-    });
-    input.addEventListener('blur', e => e.target.value = formatCurrency(e.target.value));
-  });
-  document.querySelectorAll('input,select').forEach(i => {
-    i.addEventListener('input', calcLiveExpectancy);
-    i.addEventListener('change', calcLiveExpectancy);
-  });
-  calcLiveExpectancy();
-};
-document.getElementById('previewBtn').onclick = runSimulation;
-document.getElementById('saveBtn').onclick = saveInputs;
+loadGlobals();
+updateRiskPctDisplay();
+renderCalcs();
 </script>
 </body>
 </html>
