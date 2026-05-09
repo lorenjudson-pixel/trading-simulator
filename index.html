@@ -10,20 +10,17 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
             color: #e0e0e0;
             background: #0a0a0a;
         }
-
         .hero-carousel {
             position: relative;
             height: 600px;
             overflow: hidden;
         }
-
         .carousel-slide {
             position: absolute;
             width: 100%;
@@ -33,11 +30,9 @@
             background-size: cover;
             background-position: center;
         }
-
         .carousel-slide.active {
             opacity: 1;
         }
-
         .carousel-slide::before {
             content: '';
             position: absolute;
@@ -47,19 +42,15 @@
             bottom: 0;
             background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
         }
-
         .slide1 {
             background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80');
         }
-
         .slide2 {
             background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80');
         }
-
         .slide3 {
             background-image: url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80');
         }
-
         .hero-content {
             position: relative;
             z-index: 10;
@@ -67,21 +58,18 @@
             color: white;
             padding: 180px 20px 80px;
         }
-
         .hero-content h1 {
             font-size: 3.5em;
             margin-bottom: 20px;
             font-weight: 700;
             text-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
-
         .hero-content p {
             font-size: 1.4em;
             max-width: 700px;
             margin: 0 auto;
             text-shadow: 0 2px 8px rgba(0,0,0,0.5);
         }
-
         .carousel-indicators {
             position: absolute;
             bottom: 30px;
@@ -91,7 +79,6 @@
             gap: 12px;
             z-index: 20;
         }
-
         .indicator {
             width: 12px;
             height: 12px;
@@ -100,26 +87,22 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-
         .indicator.active {
             background: white;
             width: 40px;
             border-radius: 6px;
         }
-
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 80px 20px;
         }
-
         .tools-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 40px;
             margin-top: 40px;
         }
-
         .tool-card {
             background: #1a1a1a;
             border-radius: 12px;
@@ -128,43 +111,36 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             border: 1px solid #2a2a2a;
         }
-
         .tool-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 15px 50px rgba(102, 126, 234, 0.3);
             border-color: #667eea;
         }
-
         .tool-icon {
             font-size: 3em;
             margin-bottom: 20px;
         }
-
         .tool-card h2 {
             font-size: 1.8em;
             margin-bottom: 15px;
             color: #8b9dff;
         }
-
         .tool-card p {
             color: #b0b0b0;
             font-size: 1.05em;
             margin-bottom: 25px;
             line-height: 1.7;
         }
-
         .tool-features {
             list-style: none;
             margin-bottom: 30px;
         }
-
         .tool-features li {
             padding: 8px 0;
             color: #d0d0d0;
             position: relative;
             padding-left: 25px;
         }
-
         .tool-features li:before {
             content: "✓";
             position: absolute;
@@ -172,7 +148,6 @@
             color: #8b9dff;
             font-weight: bold;
         }
-
         .btn {
             display: inline-block;
             padding: 15px 35px;
@@ -184,12 +159,10 @@
             font-size: 1.1em;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
         }
-
         .features-section {
             background: #0f0f0f;
             padding: 80px 20px;
@@ -197,7 +170,6 @@
             border-top: 1px solid #2a2a2a;
             border-bottom: 1px solid #2a2a2a;
         }
-
         .features-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -205,22 +177,18 @@
             max-width: 1200px;
             margin: 0 auto;
         }
-
         .feature-item {
             text-align: center;
             padding: 30px 20px;
         }
-
         .feature-item h3 {
             font-size: 1.3em;
             margin: 15px 0;
             color: #8b9dff;
         }
-
         .feature-item p {
             color: #b0b0b0;
         }
-
         .footer {
             background: #0a0a0a;
             color: #888;
@@ -228,32 +196,26 @@
             padding: 40px 20px;
             border-top: 1px solid #2a2a2a;
         }
-
         .footer p {
             font-size: 0.95em;
         }
-
         @media (max-width: 768px) {
             .hero-carousel {
                 height: 500px;
             }
-
             .hero-content {
                 padding: 120px 20px 60px;
             }
-
             .hero-content h1 {
                 font-size: 2.2em;
             }
-            
+
             .hero-content p {
                 font-size: 1.1em;
             }
-
             .tools-grid {
                 grid-template-columns: 1fr;
             }
-
             .tool-card {
                 padding: 30px;
             }
@@ -286,7 +248,6 @@
             <div class="indicator" data-slide="2"></div>
         </div>
     </div>
-
     <div class="container">
         <div class="tools-grid">
             <div class="tool-card">
@@ -302,7 +263,6 @@
                 </ul>
                 <a href="calculator.html" class="btn">Launch Calculator</a>
             </div>
-
             <div class="tool-card">
                 <div class="tool-icon">🎯</div>
                 <h2>Trading Simulator</h2>
@@ -316,7 +276,6 @@
                 </ul>
                 <a href="trading-sim-v2.html" class="btn">Launch Simulator</a>
             </div>
-
             <div class="tool-card">
                 <div class="tool-icon">📓</div>
                 <h2>Trade Journal</h2>
@@ -330,9 +289,21 @@
                 </ul>
                 <a href="https://lorenjudson-pixel.github.io/trading-simulator/Journal.html" class="btn">Launch Journal</a>
             </div>
+            <div class="tool-card">
+                <div class="tool-icon">📈</div>
+                <h2>STIR Dashboard</h2>
+                <p>Decode what the bond market is pricing in for the Fed. A CME-FedWatch-style dashboard built from SOFR and Fed Funds futures — see the implied policy-rate path, meeting-by-meeting probabilities, and the full forward curve at a glance.</p>
+                <ul class="tool-features">
+                    <li>Post-meeting implied rate path</li>
+                    <li>FedWatch-style probabilities (P(hold), P(cut 25), …)</li>
+                    <li>SOFR (SR3) & Fed Funds (ZQ) strip toggle</li>
+                    <li>Calendar spread matrix in basis points</li>
+                    <li>25 bp policy-rail (CB LVL) overlay</li>
+                </ul>
+                <a href="stir-dashboard.html" class="btn">Launch Dashboard</a>
+            </div>
         </div>
     </div>
-
     <div class="features-section">
         <div class="features-grid">
             <div class="feature-item">
@@ -353,36 +324,30 @@
             </div>
         </div>
     </div>
-
     <div class="footer">
         <p>&copy; 2025 Trading Tools. Built for traders, by traders.</p>
     </div>
-
     <script>
         let currentSlide = 0;
         const slides = document.querySelectorAll('.carousel-slide');
         const indicators = document.querySelectorAll('.indicator');
-
         function showSlide(index) {
             slides.forEach(slide => slide.classList.remove('active'));
             indicators.forEach(indicator => indicator.classList.remove('active'));
-            
+
             slides[index].classList.add('active');
             indicators[index].classList.add('active');
         }
-
         function nextSlide() {
             currentSlide = (currentSlide + 1) % slides.length;
             showSlide(currentSlide);
         }
-
         indicators.forEach((indicator, index) => {
             indicator.addEventListener('click', () => {
                 currentSlide = index;
                 showSlide(currentSlide);
             });
         });
-
         setInterval(nextSlide, 5000);
     </script>
 </body>
