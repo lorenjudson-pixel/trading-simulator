@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>STIR Dashboard</title>
+<meta name="description" content="CME-FedWatch-style STIR dashboard, replicating the Capital Flows Research playbook." />
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<style>
+  :root {
+    --bg:        #000;
+    --panel:    #080808;
+    --rule:     #3D2510;
+    --orange:   #FE7C04;
+    --orange2:  #FF9533;
+    --orange3:  #5A2C00;
+    --text:     #D0D0D0;
+    --muted:    #888;
+    --green:    #00E676;
+    --red:      #FF1744;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--orange); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 18px 28px 60px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  h1 {
+    font-family: "Bahnschrift", "Segoe UI", sans-serif;
+    color: var(--orange);
+    letter-spacing: 0.06em;
+    margin: 0;
+    font-size: 28px;
+    text-transform: uppercase;
+  }
+  h1 .subtitle { color: var(--muted); font-size: 13px; font-weight: normal; letter-spacing: 0.04em; margin-left: 12px; text-transform: none; font-family: "IBM Plex Mono", monospace; }
+  h2, h3, h4 { color: var(--orange); font-family: "Bahnschrift", "Segoe UI", sans-serif; letter-spacing: 0.04em; }
+  h3 { font-size: 14px; text-transform: uppercase; margin: 16px 0 8px; }
+  .badges { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); margin: 8px 0 6px; }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border: 1px solid var(--orange3);
+    color: var(--orange);
+    margin-right: 6px;
+    letter-spacing: 0.06em;
+  }
+  .home-link { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--rule); margin: 20px 0 16px; }
+  .tab {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: "Bahnschrift", "Segoe UI", sans-serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 14px;
+    border-bottom: 2px solid transparent;
+  }
+  .tab:hover { color: var(--orange); }
+  .tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .tabpanel { display: none; }
+  .tabpanel.active { display: block; }
+
+  /* Products tab layout */
+  .products-row { display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 800px) { .products-row { grid-template-columns: 1fr; } }
+  .radio-group { display: flex; flex-direction: column; gap: 6px; }
+  .radio-group label {
+    display: block;
+    padding: 8px 14px;
+    border: 1px solid var(--orange3);
+    cursor: pointer;
+    font-size: 13px;
+    user-select: none;
+  }
+  .radio-group input { display: none; }
+  .radio-group input:checked + span { color: var(--orange); }
+  .radio-group label:has(input:checked) { border-color: var(--orange); background: rgba(254,124,4,0.08); }
+
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+  @media (max-width: 800px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+  .metric {
+    padding: 10px 14px;
+    border: 1px solid var(--rule);
+    background: var(--panel);
+  }
+  .metric-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .metric-value { font-size: 22px; color: var(--orange); font-family: "IBM Plex Mono", monospace; margin-top: 2px; }
+  .metric-delta { font-size: 11px; color: var(--text); font-family: "IBM Plex Mono", monospace; }
+
+  /* Sub-tabs inside Meetings */
+  .sub-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--rule); margin: 14px 0 14px; }
+  .sub-tab {
+    background: transparent; border: none; color: var(--muted);
+    padding: 8px 16px; cursor: pointer;
+    font-family: "IBM Plex Mono", monospace; font-size: 12px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    border-bottom: 1px solid transparent;
+  }
+  .sub-tab:hover { color: var(--orange); }
+  .sub-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .subpanel { display: none; }
+  .subpanel.active { display: block; }
+
+  /* Tables */
+  table { border-collapse: collapse; width: 100%; font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+  th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--rule); }
+  th { color: var(--orange); text-align: right; font-weight: normal; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+  th:first-child, td:first-child { text-align: left; }
+  tr:hover td { background: rgba(254,124,4,0.04); }
+  caption { caption-side: top; text-align: left; padding: 8px 0; color: var(--muted); font-size: 12px; font-family: "IBM Plex Mono", monospace; }
+
+  /* Spread matrix cell colours computed inline */
+  .spread-table td.spread { color: #000; font-weight: 600; }
+
+  details { margin-top: 12px; }
+  details summary { cursor: pointer; color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 12px; padding: 6px 0; }
+
+  .footer-note {
+    margin-top: 32px; padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    color: var(--muted); font-size: 12px; font-family: "IBM Plex Mono", monospace;
+  }
+  .stale {
+    background: rgba(255,23,68,0.12); color: var(--red);
+    border: 1px solid rgba(255,23,68,0.3);
+    padding: 8px 14px; margin-top: 8px;
+    font-family: "IBM Plex Mono", monospace; font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>STIR Dashboard <span class="subtitle">· CME-FedWatch replication</span></h1>
+      <div class="badges" id="badges"></div>
+    </div>
+    <div class="home-link"><a href="index.html">&larr; back to index</a></div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="products">Products</button>
+    <button class="tab" data-tab="meetings">Meetings</button>
+    <button class="tab" data-tab="about">About</button>
+  </div>
+
+  <!-- ───── PRODUCTS ───── -->
+  <section id="tab-products" class="tabpanel active">
+    <div class="products-row">
+      <div class="radio-group">
+        <label><input type="radio" name="product" value="SR3" checked /><span>SOFR (SR3)</span></label>
+        <label><input type="radio" name="product" value="ZQ" /><span>Fed Funds (ZQ)</span></label>
+      </div>
+      <div id="strip-chart" style="height: 460px;"></div>
+    </div>
+    <div class="metrics" id="products-metrics"></div>
+    <details>
+      <summary>Strip table</summary>
+      <div id="strip-table"></div>
+    </details>
+  </section>
+
+  <!-- ───── MEETINGS ───── -->
+  <section id="tab-meetings" class="tabpanel">
+    <div class="sub-tabs">
+      <button class="sub-tab active" data-sub="strip">Strip</button>
+      <button class="sub-tab" data-sub="spreads">Spreads</button>
+      <button class="sub-tab" data-sub="cb">CB LVL</button>
+    </div>
+
+    <div id="sub-strip" class="subpanel active">
+      <div id="path-chart" style="height: 460px;"></div>
+      <h3>CME-FedWatch-style probability mass (%)</h3>
+      <div id="probs-table"></div>
+    </div>
+
+    <div id="sub-spreads" class="subpanel">
+      <h3>Calendar spread matrix · ZQ (Fed Funds) · bp</h3>
+      <div id="spread-zq"></div>
+      <h3>Calendar spread matrix · SR3 (SOFR) · bp</h3>
+      <div id="spread-sr3"></div>
+    </div>
+
+    <div id="sub-cb" class="subpanel">
+      <div id="cb-chart" style="height: 460px;"></div>
+    </div>
+  </section>
+
+  <!-- ───── ABOUT ───── -->
+  <section id="tab-about" class="tabpanel">
+    <h3>About this dashboard</h3>
+    <p style="max-width: 800px;">
+      Independent replication of the Capital Flows Research <em>STIR Replication Playbook</em>.
+      All math runs in the browser; data is a daily snapshot embedded in the page when it's built.
+    </p>
+    <ul style="max-width: 800px; line-height: 1.8;">
+      <li><strong>Products tab</strong> — SOFR (SR3) / Fed Funds (ZQ) strip toggle, EFFR baseline, terminal contract highlighted.</li>
+      <li><strong>Meetings tab → Strip</strong> — day-weighted post-meeting rate path:
+        <code>post = (avg·N − (D−1)·prev) / (N−D+1)</code>; FedWatch-style probability table.</li>
+      <li><strong>Meetings tab → Spreads</strong> — calendar spread matrix in basis points.</li>
+      <li><strong>Meetings tab → CB LVL</strong> — meeting path overlaid with 25 bp policy rails.</li>
+    </ul>
+    <h3>Data sources</h3>
+    <ul style="max-width: 800px; line-height: 1.8;">
+      <li>SR3 / ZQ daily settlements: Yahoo Finance (<code>.CBT</code> for ZQ, <code>.CME</code> for SR3).</li>
+      <li>EFFR / SOFR: FRED (<code>EFFR</code>, <code>SOFR</code>).</li>
+      <li>FOMC schedule: hand-maintained in the build script; refresh annually from federalreserve.gov.</li>
+    </ul>
+    <p class="footer-note">
+      Data on this page is "as of last build." To refresh, the maintainer re-runs <code>build_stir.py</code> and pushes.
+    </p>
+  </section>
+
+  <div class="footer-note">
+    Built from the <em>Capital Flows Research STIR Replication Playbook</em>.
+    Source: <a href="https://github.com/lorenjudson-pixel/trading-simulator">github.com/lorenjudson-pixel/trading-simulator</a>
+  </div>
+
+</div>
+
+<!-- Embedded data -->
+<script id="stir-data" type="application/json">
+{
+  "ts": "2026-05-07T00:00:00",
+  "effr": 4.33,
+  "sofr": 4.335,
+  "fomc_dates": ["2026-06-17","2026-07-29","2026-09-16","2026-11-04","2026-12-16","2027-01-27","2027-03-17","2027-04-28","2027-06-16"],
+  "sr3": [
+    {"symbol":"SR3M6","expiry":"2026-06-30","settle":96.355},
+    {"symbol":"SR3U6","expiry":"2026-09-30","settle":96.325},
+    {"symbol":"SR3Z6","expiry":"2026-12-31","settle":96.260},
+    {"symbol":"SR3H7","expiry":"2027-03-31","settle":96.210},
+    {"symbol":"SR3M7","expiry":"2027-06-30","settle":96.215},
+    {"symbol":"SR3U7","expiry":"2027-09-30","settle":96.265},
+    {"symbol":"SR3Z7","expiry":"2027-12-31","settle":96.330},
+    {"symbol":"SR3H8","expiry":"2028-03-31","settle":96.360}
+  ],
+  "zq": [
+    {"symbol":"ZQK6","expiry":"2026-05-31","settle":96.3625},
+    {"symbol":"ZQM6","expiry":"2026-06-30","settle":96.365},
+    {"symbol":"ZQN6","expiry":"2026-07-31","settle":96.375},
+    {"symbol":"ZQQ6","expiry":"2026-08-31","settle":96.39},
+    {"symbol":"ZQU6","expiry":"2026-09-30","settle":96.385},
+    {"symbol":"ZQV6","expiry":"2026-10-31","settle":96.38},
+    {"symbol":"ZQX6","expiry":"2026-11-30","settle":96.355},
+    {"symbol":"ZQZ6","expiry":"2026-12-31","settle":96.325},
+    {"symbol":"ZQF7","expiry":"2027-01-31","settle":96.32},
+    {"symbol":"ZQG7","expiry":"2027-02-28","settle":96.295},
+    {"symbol":"ZQH7","expiry":"2027-03-31","settle":96.28},
+    {"symbol":"ZQJ7","expiry":"2027-04-30","settle":96.26},
+    {"symbol":"ZQK7","expiry":"2027-05-31","settle":96.245},
+    {"symbol":"ZQM7","expiry":"2027-06-30","settle":96.245},
+    {"symbol":"ZQN7","expiry":"2027-07-31","settle":96.265},
+    {"symbol":"ZQQ7","expiry":"2027-08-31","settle":96.30},
+    {"symbol":"ZQU7","expiry":"2027-09-30","settle":96.37},
+    {"symbol":"ZQV7","expiry":"2027-10-31","settle":96.40}
+  ],
+  "strip_source": "yahoo",
+  "ref_source": "fred.stlouisfed.org"
+}
+</script>
+
+<script>
+(function () {
+  // ─── Pure JS port of the playbook math ─────────────────────────────────
+  const CFR = {
+    bg: "#000", panel: "#080808", rule: "#3D2510",
+    orange: "#FE7C04", orange2: "#FF9533", orange3: "#5A2C00",
+    text: "#D0D0D0", muted: "#888",
+  };
+
+  function impliedRate(settle) { return 100.0 - settle; }
+
+  function addImplied(strip, ocr) {
+    return strip.map(r => ({
+      ...r,
+      implied_rate: 100.0 - r.settle,
+      vs_ocr_bp: (100.0 - r.settle - ocr) * 100.0,
+    }));
+  }
+
+  function findTerminal(strip, ocr) {
+    const active = strip.filter(r => r.settle > 0);
+    if (active.length === 0) return strip[0];
+    const front = active[0];
+    const hiking = front.implied_rate >= ocr;
+    let best = front;
+    for (let i = 1; i < active.length; i++) {
+      const row = active[i];
+      if (hiking && row.implied_rate >= best.implied_rate) best = row;
+      else if (!hiking && row.implied_rate <= best.implied_rate) best = row;
+      else break;
+    }
+    return best;
+  }
+
+  function daysInMonth(year, month) {
+    return new Date(year, month, 0).getDate();
+  }
+
+  function postMeetingRate(contractRate, prevRate, meetingDay, daysInMonth) {
+    const daysAfter = daysInMonth - meetingDay + 1;
+    if (daysAfter <= 0) return contractRate;
+    return (contractRate * daysInMonth - (meetingDay - 1) * prevRate) / daysAfter;
+  }
+
+  function parseDate(s) { const [y,m,d] = s.split("-").map(Number); return new Date(y, m - 1, d); }
+
+  function buildMeetingPath(zqStrip, effr, fomcDates) {
+    if (!zqStrip.length) return [];
+    const byMonth = {};
+    zqStrip.forEach(r => {
+      const exp = parseDate(r.expiry);
+      const key = exp.getFullYear() + "-" + (exp.getMonth() + 1);
+      byMonth[key] = r.implied_rate;
+    });
+    const fomcKeys = new Set(fomcDates.map(d => {
+      const dt = parseDate(d); return dt.getFullYear() + "-" + (dt.getMonth() + 1);
+    }));
+
+    let prev = effr;
+    const out = [];
+    for (const ds of fomcDates) {
+      const d = parseDate(ds);
+      const key = d.getFullYear() + "-" + (d.getMonth() + 1);
+      const rate = byMonth[key];
+      if (rate === undefined) continue;
+      const N = daysInMonth(d.getFullYear(), d.getMonth() + 1);
+      const ny = d.getMonth() + 1 === 12 ? d.getFullYear() + 1 : d.getFullYear();
+      const nm = d.getMonth() + 1 === 12 ? 1 : d.getMonth() + 2;
+      const nextKey = ny + "-" + nm;
+      const nextRate = byMonth[nextKey];
+      const nextHasMeeting = fomcKeys.has(nextKey);
+      let post;
+      if (nextRate !== undefined && !nextHasMeeting) {
+        post = nextRate;
+      } else {
+        post = postMeetingRate(rate, prev, d.getDate(), N);
+      }
+      out.push({
+        meeting: ds,
+        post_rate: post,
+        cum_cuts: (effr - post) / 0.25,
+      });
+      prev = post;
+    }
+    return out;
+  }
+
+  function meetingProbs(postRate, effr) {
+    const raw = (effr - postRate) / 0.25;
+    const lower = Math.floor(raw);
+    const frac = raw - lower;
+    const mass = { [lower]: 1 - frac };
+    if (frac > 0.001) mass[lower + 1] = frac;
+    return {
+      hold:   100 * (mass[0]  || 0),
+      cut25:  100 * (mass[1]  || 0),
+      cut50:  100 * (mass[2]  || 0),
+      cut75:  100 * (mass[3]  || 0),
+      hike25: 100 * (mass[-1] || 0),
+    };
+  }
+
+  function spreadMatrix(strip, ocr, horizons) {
+    horizons = horizons || [3, 6, 9, 12];
+    if (!strip.length) return { headers: [], rows: [] };
+    const rows = [];
+    const monthKey = r => {
+      const exp = parseDate(r.expiry);
+      return exp.getMonth() + 1 + 12 * exp.getFullYear();
+    };
+    for (const r of strip) {
+      const rowMo = monthKey(r);
+      const cells = { contract: r.symbol };
+      for (const h of horizons) {
+        const target = rowMo + h;
+        const fwd = strip.filter(s => monthKey(s) >= target);
+        cells["+" + h + "M"] = fwd.length
+          ? Math.round((fwd[0].implied_rate - r.implied_rate) * 100)
+          : NaN;
+      }
+      rows.push(cells);
+    }
+    return { headers: ["contract", ...horizons.map(h => "+" + h + "M")], rows };
+  }
+
+  function cbLevels(effr, bandBp, stepBp) {
+    bandBp = bandBp || 150; stepBp = stepBp || 25;
+    const settle = Math.round(effr / 0.25) * 0.25;
+    const n = Math.floor(bandBp / stepBp);
+    const out = [];
+    for (let i = 0; i < 2 * n + 1; i++) out.push(settle + (i - n) * (stepBp / 100));
+    return out;
+  }
+
+  // ─── Plotly figure builders ────────────────────────────────────────────
+  const baseLayout = (title) => ({
+    title: { text: title, font: { color: CFR.orange, family: "Bahnschrift, Segoe UI, sans-serif", size: 18 }, x: 0, xanchor: "left" },
+    paper_bgcolor: CFR.bg, plot_bgcolor: "#050505",
+    font: { family: "Segoe UI, sans-serif", color: CFR.text },
+    margin: { l: 60, r: 80, t: 50, b: 40 },
+    xaxis: { showgrid: false, zeroline: false },
+    yaxis: { showgrid: true, gridcolor: "#1a1a1a", zeroline: false, title: "Implied rate (%)" },
+  });
+
+  function plotStrip(divId, strip, ocr, title, sofrSpot) {
+    if (!strip.length) { Plotly.purge(divId); return; }
+    const term = findTerminal(strip, ocr);
+    const colors = strip.map(r => r.symbol === term.symbol ? CFR.orange2 : CFR.orange3);
+    const text = strip.map(r => r.implied_rate.toFixed(3) + "%");
+    const trace = {
+      x: strip.map(r => r.symbol), y: strip.map(r => r.implied_rate),
+      type: "bar", marker: { color: colors, line: { color: "#9A4A02" } },
+      text, textposition: "outside",
+      textfont: { color: CFR.text, size: 10 },
+      hovertemplate: "<b>%{x}</b><br>Implied: %{y:.3f}%<extra></extra>",
+    };
+    const layout = baseLayout(title);
+    layout.shapes = [{
+      type: "line", xref: "paper", x0: 0, x1: 1, y0: ocr, y1: ocr,
+      line: { color: CFR.orange, dash: "dash", width: 1.4 },
+    }];
+    layout.annotations = [{
+      xref: "paper", yref: "y", x: 1, y: ocr, xanchor: "left",
+      text: "EFFR " + ocr.toFixed(3) + "%",
+      showarrow: false, font: { color: CFR.orange, size: 11 },
+    }];
+    if (sofrSpot !== null && sofrSpot !== undefined) {
+      layout.annotations.push({
+        xref: "paper", yref: "paper", x: 0.99, y: 0.05, xanchor: "right",
+        text: "SOFR " + sofrSpot.toFixed(3) + "% · basis " + ((sofrSpot - ocr) * 100).toFixed(1) + " bp",
+        showarrow: false, font: { color: CFR.text, size: 11, family: "IBM Plex Mono, monospace" },
+      });
+    }
+    Plotly.newPlot(divId, [trace], layout, { responsive: true, displaylogo: false });
+  }
+
+  function plotMeetingPath(divId, path, effr, title) {
+    title = title || "MEETINGS · POST-MEETING IMPLIED PATH";
+    if (!path.length) { Plotly.purge(divId); return; }
+    const trace = {
+      x: path.map(p => p.meeting), y: path.map(p => p.post_rate),
+      mode: "lines+markers+text", type: "scatter",
+      line: { color: CFR.orange2, width: 2.4, shape: "hv" },
+      marker: { color: CFR.bg, line: { color: CFR.orange2, width: 1.5 }, size: 9 },
+      text: path.map(p => p.post_rate.toFixed(3) + "%"),
+      textposition: "top center",
+      textfont: { color: CFR.text, size: 10 },
+      hovertemplate: "<b>%{x}</b><br>Post: %{y:.3f}%<extra></extra>",
+    };
+    const layout = baseLayout(title);
+    layout.shapes = [{
+      type: "line", xref: "paper", x0: 0, x1: 1, y0: effr, y1: effr,
+      line: { color: CFR.orange, dash: "dash", width: 1.4 },
+    }];
+    layout.annotations = [{
+      xref: "paper", yref: "y", x: 1, y: effr, xanchor: "left",
+      text: "EFFR " + effr.toFixed(3) + "%",
+      showarrow: false, font: { color: CFR.orange, size: 11 },
+    }];
+    Plotly.newPlot(divId, [trace], layout, { responsive: true, displaylogo: false });
+  }
+
+  function plotCbLvl(divId, path, effr) {
+    plotMeetingPath(divId, path, effr, "MEETINGS · CB LVL");
+    if (!path.length) return;
+    const settle = Math.round(effr / 0.25) * 0.25;
+    const levels = cbLevels(effr, 150, 25);
+    const layout = document.getElementById(divId).layout || {};
+    const shapes = layout.shapes ? layout.shapes.slice() : [];
+    const annotations = layout.annotations ? layout.annotations.slice() : [];
+    levels.forEach(lv => {
+      const isSettle = Math.abs(lv - settle) < 0.01;
+      shapes.push({
+        type: "line", xref: "paper", x0: 0, x1: 1, y0: lv, y1: lv,
+        line: {
+          color: isSettle ? CFR.orange : CFR.orange3,
+          dash: isSettle ? "solid" : "dot",
+          width: isSettle ? 1.6 : 0.6,
+        },
+      });
+      annotations.push({
+        xref: "paper", yref: "y", x: 1, y: lv, xanchor: "left",
+        text: lv.toFixed(2) + "%" + (isSettle ? " · SETTLE" : ""),
+        showarrow: false,
+        font: { color: isSettle ? CFR.orange : CFR.orange3, size: 9, family: "IBM Plex Mono, monospace" },
+      });
+    });
+    Plotly.relayout(divId, { shapes, annotations });
+  }
+
+  // ─── DOM rendering ─────────────────────────────────────────────────────
+  function bpColor(v) {
+    if (isNaN(v) || v === null) return "background:transparent;color:#555;";
+    const vmax = 150.0;
+    const t = Math.max(-1, Math.min(1, v / vmax));
+    let r, g, b;
+    if (t >= 0) { r = 255; g = Math.round(180 * (1 - t)); b = Math.round(120 * (1 - t)); }
+    else        { r = Math.round(120 * (1 + t)); g = Math.round(180 * (1 + t)); b = 255; }
+    const fg = Math.abs(t) > 0.4 ? "#000" : CFR.text;
+    return `background-color: rgba(${r},${g},${b},0.55); color: ${fg};`;
+  }
+
+  function fmtSign(v, digits) {
+    if (isNaN(v) || v === null) return "—";
+    const s = v >= 0 ? "+" : "";
+    return s + v.toFixed(digits || 0);
+  }
+
+  function renderSpread(divId, sm) {
+    const div = document.getElementById(divId);
+    if (!sm.rows.length) { div.innerHTML = "<p style='color:#888'>No spreads available.</p>"; return; }
+    let html = "<table class='spread-table'><thead><tr>";
+    for (const h of sm.headers) html += `<th>${h}</th>`;
+    html += "</tr></thead><tbody>";
+    for (const row of sm.rows) {
+      html += "<tr>";
+      html += `<td>${row.contract}</td>`;
+      for (const h of sm.headers.slice(1)) {
+        const v = row[h];
+        html += `<td class='spread' style='${bpColor(v)}'>${fmtSign(v, 0)}</td>`;
+      }
+      html += "</tr>";
+    }
+    html += "</tbody></table>";
+    div.innerHTML = html;
+  }
+
+  function renderProbs(divId, path, effr) {
+    if (!path.length) { document.getElementById(divId).innerHTML = "<p style='color:#888'>No FOMC dates aligned with available ZQ contracts.</p>"; return; }
+    const cols = ["meeting","post_rate","cum_cuts","hold","cut25","cut50","cut75","hike25"];
+    let html = "<table><thead><tr>";
+    for (const c of cols) html += `<th>${c}</th>`;
+    html += "</tr></thead><tbody>";
+    for (const p of path) {
+      const pp = meetingProbs(p.post_rate, effr);
+      html += "<tr>";
+      html += `<td>${p.meeting}</td>`;
+      html += `<td>${p.post_rate.toFixed(3)}</td>`;
+      html += `<td>${p.cum_cuts.toFixed(2)}</td>`;
+      html += `<td>${pp.hold.toFixed(1)}</td>`;
+      html += `<td>${pp.cut25.toFixed(1)}</td>`;
+      html += `<td>${pp.cut50.toFixed(1)}</td>`;
+      html += `<td>${pp.cut75.toFixed(1)}</td>`;
+      html += `<td>${pp.hike25.toFixed(1)}</td>`;
+      html += "</tr>";
+    }
+    html += "</tbody></table>";
+    document.getElementById(divId).innerHTML = html;
+  }
+
+  function renderStripTable(divId, strip) {
+    if (!strip.length) { document.getElementById(divId).innerHTML = ""; return; }
+    let html = "<table><thead><tr><th>symbol</th><th>expiry</th><th>settle</th><th>implied %</th><th>vs OCR (bp)</th></tr></thead><tbody>";
+    for (const r of strip) {
+      html += `<tr><td>${r.symbol}</td><td>${r.expiry}</td><td>${r.settle.toFixed(4)}</td><td>${r.implied_rate.toFixed(3)}</td><td>${fmtSign(r.vs_ocr_bp, 0)}</td></tr>`;
+    }
+    html += "</tbody></table>";
+    document.getElementById(divId).innerHTML = html;
+  }
+
+  function renderMetrics(divId, strip, ocr, sofrSpot) {
+    const div = document.getElementById(divId);
+    if (!strip.length) { div.innerHTML = ""; return; }
+    const term = findTerminal(strip, ocr);
+    const cards = [
+      { label: "EFFR (OCR)",      value: ocr.toFixed(3) + "%",    delta: "" },
+      { label: "SOFR spot",       value: sofrSpot.toFixed(3) + "%", delta: ((sofrSpot - ocr) * 100).toFixed(1) + " bp vs EFFR" },
+      { label: "Terminal",        value: term.symbol,             delta: term.implied_rate.toFixed(3) + "%" },
+      { label: "Terminal vs OCR", value: ((term.implied_rate - ocr) * 100).toFixed(0) + " bp",
+        delta: (term.implied_rate - ocr).toFixed(3) + " pp" },
+    ];
+    div.innerHTML = cards.map(c =>
+      `<div class='metric'><div class='metric-label'>${c.label}</div><div class='metric-value'>${c.value}</div><div class='metric-delta'>${c.delta}</div></div>`
+    ).join("");
+  }
+
+  // ─── Boot ──────────────────────────────────────────────────────────────
+  const dataEl = document.getElementById("stir-data");
+  const data = JSON.parse(dataEl.textContent);
+
+  const ocr = data.effr;
+  const sofrSpot = data.sofr;
+  const sr3 = addImplied(data.sr3, ocr);
+  const zq  = addImplied(data.zq, ocr);
+  const path = buildMeetingPath(zq, ocr, data.fomc_dates);
+
+  // Header badges
+  const ts = new Date(data.ts);
+  const now = new Date();
+  const ageDays = Math.floor((now - ts) / (1000 * 60 * 60 * 24));
+  const staleClass = ageDays > 7 ? " <span style='color:#FF1744'>(stale)</span>" : "";
+  const badges = document.getElementById("badges");
+  badges.innerHTML =
+    `<span class='badge'>STRIP · ${data.strip_source}</span>` +
+    `<span class='badge'>RATES · ${data.ref_source}</span>` +
+    `<span class='badge'>FOMC · ${data.fomc_dates.length} upcoming</span>` +
+    `Data as of ${ts.toISOString().slice(0,10)} · ${ageDays}d ago${staleClass}`;
+  if (ageDays > 14) {
+    const stale = document.createElement("div");
+    stale.className = "stale";
+    stale.textContent = `⚠ Snapshot is ${ageDays} days old — re-run build_stir.py for fresh data.`;
+    badges.parentNode.appendChild(stale);
+  }
+
+  // Initial render: SR3 selected
+  function renderProducts() {
+    const sel = document.querySelector("input[name='product']:checked").value;
+    if (sel === "SR3") {
+      plotStrip("strip-chart", sr3, ocr, "PRODUCTS · SOFR (SR3) STRIP", sofrSpot);
+      renderMetrics("products-metrics", sr3, ocr, sofrSpot);
+      renderStripTable("strip-table", sr3);
+    } else {
+      plotStrip("strip-chart", zq, ocr, "PRODUCTS · FED FUNDS (ZQ) STRIP", null);
+      renderMetrics("products-metrics", zq, ocr, sofrSpot);
+      renderStripTable("strip-table", zq);
+    }
+  }
+  document.querySelectorAll("input[name='product']").forEach(el =>
+    el.addEventListener("change", renderProducts));
+  renderProducts();
+
+  // Meetings tab
+  plotMeetingPath("path-chart", path, ocr);
+  plotCbLvl("cb-chart", path, ocr);
+  renderProbs("probs-table", path, ocr);
+  renderSpread("spread-zq", spreadMatrix(zq, ocr));
+  renderSpread("spread-sr3", spreadMatrix(sr3, ocr));
+
+  // Tab switching
+  document.querySelectorAll(".tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tabpanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+      window.dispatchEvent(new Event("resize"));  // re-render plotly
+    });
+  });
+  document.querySelectorAll(".sub-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".sub-tab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".subpanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("sub-" + btn.dataset.sub).classList.add("active");
+      window.dispatchEvent(new Event("resize"));
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
