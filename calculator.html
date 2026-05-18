@@ -77,6 +77,8 @@ input:focus, select:focus { outline:none; border-color:#58a6ff; }
 .sanity-pane.bad .h { color:#f85149; }
 .fx-rate-help { font-size:.7em; color:#8b949e; margin-top:3px; font-style:italic; }
 .fx-rate-help.cross { color:#f0ad4e; }
+.delivery-warn { background:#2c0d0d; border:2px solid #f85149; border-radius:6px; padding:10px 12px; margin:10px 0; color:#f85149; font-size:.85em; font-weight:600; line-height:1.5; }
+.delivery-warn .asset { color:#fff; font-weight:bold; }
 .override-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; padding:8px; background:#0d1117; border:1px dashed #f0ad4e44; border-radius:6px; }
 .override-row label { font-size:.75em; color:#f0ad4e; margin-bottom:3px; }
 .override-row input { padding:5px; font-size:.85em; background:#161b22; }
@@ -139,6 +141,10 @@ var instrumentsNinja={
   ES:{tickSize:0.25,tickValue:12.50,marginID:500,marginON:11660,isFutures:true,assetClass:'index'},
   MNQ:{tickSize:0.25,tickValue:0.50,marginID:100,marginON:1738,isFutures:true,assetClass:'index'},
   NQ:{tickSize:0.25,tickValue:5.00,marginID:1000,marginON:17380,isFutures:true,assetClass:'index'},
+  MYM:{tickSize:1,tickValue:0.50,marginID:100,marginON:1800,isFutures:true,assetClass:'index'},
+  YM:{tickSize:1,tickValue:5.00,marginID:500,marginON:18000,isFutures:true,assetClass:'index'},
+  M2K:{tickSize:0.1,tickValue:0.50,marginID:100,marginON:1389,isFutures:true,assetClass:'index'},
+  RTY:{tickSize:0.1,tickValue:5.00,marginID:500,marginON:13891,isFutures:true,assetClass:'index'},
   MGC:{tickSize:0.10,tickValue:1.00,marginID:200,marginON:814,isFutures:true,assetClass:'commodity'},
   GC:{tickSize:0.10,tickValue:10.00,marginID:2000,marginON:8140,isFutures:true,assetClass:'commodity'},
   MCL:{tickSize:0.01,tickValue:1.00,marginID:100,marginON:726,isFutures:true,assetClass:'commodity'},
@@ -146,33 +152,33 @@ var instrumentsNinja={
   SIL:{tickSize:0.005,tickValue:5.00,marginID:440,marginON:4400,isFutures:true,assetClass:'commodity'},
   SI:{tickSize:0.005,tickValue:25.00,marginID:2200,marginON:22000,isFutures:true,assetClass:'commodity'},
   MBT:{tickSize:5,tickValue:0.50,marginID:200,marginON:2000,isFutures:true,assetClass:'crypto'},
-  ETH:{tickSize:0.25,tickValue:12.50,marginID:1500,marginON:10000,isFutures:true,assetClass:'crypto'},
+  ETH:{tickSize:0.5,tickValue:25.00,marginID:1500,marginON:58756,isFutures:true,assetClass:'crypto'},
   MET:{tickSize:0.5,tickValue:0.05,marginID:80,marginON:150,isFutures:true,assetClass:'crypto'},
-  ZC:{tickSize:0.0025,tickValue:12.50,marginID:250,marginON:2475,isFutures:true,assetClass:'grain'},
-  ZW:{tickSize:0.0025,tickValue:12.50,marginID:200,marginON:2000,isFutures:true,assetClass:'grain'},
-  ZS:{tickSize:0.0025,tickValue:12.50,marginID:250,marginON:2475,isFutures:true,assetClass:'grain'},
-  ZT:{tickSize:0.0078125,tickValue:15.625,marginID:500,marginON:1540,isFutures:true,assetClass:'rates'},
+  ZC:{tickSize:0.25,tickValue:12.50,marginID:250,marginON:2475,isFutures:true,assetClass:'grain'},
+  ZW:{tickSize:0.25,tickValue:12.50,marginID:200,marginON:2000,isFutures:true,assetClass:'grain'},
+  ZS:{tickSize:0.25,tickValue:12.50,marginID:250,marginON:2475,isFutures:true,assetClass:'grain'},
+  ZT:{tickSize:0.00390625,tickValue:7.81,marginID:500,marginON:1980,isFutures:true,assetClass:'rates'},
   ZN:{tickSize:0.015625,tickValue:15.625,marginID:500,marginON:2475,isFutures:true,assetClass:'rates'},
   ZB:{tickSize:0.03125,tickValue:31.25,marginID:1000,marginON:4620,isFutures:true,assetClass:'rates'},
   M6A:{tickSize:0.0001,tickValue:1.00,marginID:50,marginON:220,isFutures:true,assetClass:'fxfut',contractSize:10000,base:'AUD',quote:'USD'},
-  A6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:2200,isFutures:true,assetClass:'fxfut',contractSize:100000,base:'AUD',quote:'USD'},
+  A6:{tickSize:0.00005,tickValue:5.00,marginID:500,marginON:2299,isFutures:true,assetClass:'fxfut',contractSize:100000,base:'AUD',quote:'USD'},
   M6E:{tickSize:0.0001,tickValue:1.25,marginID:50,marginON:292,isFutures:true,assetClass:'fxfut',contractSize:12500,base:'EUR',quote:'USD'},
-  E6:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:2915,isFutures:true,assetClass:'fxfut',contractSize:125000,base:'EUR',quote:'USD'},
+  E6:{tickSize:0.00005,tickValue:6.25,marginID:500,marginON:2904,isFutures:true,assetClass:'fxfut',contractSize:125000,base:'EUR',quote:'USD'},
   M6B:{tickSize:0.0001,tickValue:0.625,marginID:50,marginON:308,isFutures:true,assetClass:'fxfut',contractSize:6250,base:'GBP',quote:'USD'},
   B6:{tickSize:0.0001,tickValue:6.25,marginID:500,marginON:3080,isFutures:true,assetClass:'fxfut',contractSize:62500,base:'GBP',quote:'USD'},
   MICD:{tickSize:0.0001,tickValue:1.00,marginID:50,marginON:152,isFutures:true,assetClass:'fxfut',contractSize:10000,base:'CAD',quote:'USD'},
-  C6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:1518,isFutures:true,assetClass:'fxfut',contractSize:100000,base:'CAD',quote:'USD'},
-  S6:{tickSize:0.0001,tickValue:12.50,marginID:500,marginON:4950,isFutures:true,assetClass:'fxfut',contractSize:125000,base:'CHF',quote:'USD'},
+  C6:{tickSize:0.00005,tickValue:5.00,marginID:500,marginON:990,isFutures:true,assetClass:'fxfut',contractSize:100000,base:'CAD',quote:'USD'},
+  S6:{tickSize:0.00005,tickValue:6.25,marginID:500,marginON:4840,isFutures:true,assetClass:'fxfut',contractSize:125000,base:'CHF',quote:'USD'},
   J6:{tickSize:0.0000005,tickValue:6.25,marginID:500,marginON:4092,isFutures:true,assetClass:'fxfut',contractSize:12500000,base:'JPY',quote:'USD'},
-  N6:{tickSize:0.0001,tickValue:10.00,marginID:500,marginON:2200,isFutures:true,assetClass:'fxfut',contractSize:100000,base:'NZD',quote:'USD'},
+  N6:{tickSize:0.00005,tickValue:5.00,marginID:500,marginON:1430,isFutures:true,assetClass:'fxfut',contractSize:100000,base:'NZD',quote:'USD'},
   M6N:{tickSize:0.0001,tickValue:1.00,marginID:50,marginON:220,isFutures:true,assetClass:'fxfut',contractSize:10000,base:'NZD',quote:'USD'},
   AUDUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'AUD',quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
   EURUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'EUR',quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
   GBPUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'GBP',quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
   NZDUSD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'NZD',quote:'USD',marginPctIntra:0.05,marginPctNight:0.05},
-  USDCAD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'USD',quote:'CAD',marginPctIntra:0.05,marginPctNight:0.05},
-  USDCHF:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'USD',quote:'CHF',marginPctIntra:0.05,marginPctNight:0.05},
-  USDJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,base:'USD',quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05},
+  USDCAD:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'USD',quote:'CAD',marginPctIntra:0.05,marginPctNight:0.05,futEquiv:'C6'},
+  USDCHF:{isFutures:false,assetClass:'fxspot',pipSize:0.0001,base:'USD',quote:'CHF',marginPctIntra:0.05,marginPctNight:0.05,futEquiv:'S6'},
+  USDJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,base:'USD',quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05,futEquiv:'J6'},
   EURJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,base:'EUR',quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05},
   GBPJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,base:'GBP',quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05},
   CHFJPY:{isFutures:false,assetClass:'fxspot',pipSize:0.01,base:'CHF',quote:'JPY',marginPctIntra:0.05,marginPctNight:0.05},
@@ -181,27 +187,64 @@ var instrumentsNinja={
 
 // TOS overrides — note: many of these are estimates pending real-account verification.
 // MCL VERIFIED. CL scaled proportionally. Others to be confirmed by user.
+// TOS overrides — VERIFIED from TOS spec table screenshots
 var tosOverrides={
-  MES:{marginID:2465,marginON:2465}, ES:{marginID:24650,marginON:24650},
-  MNQ:{marginID:3692,marginON:3692}, NQ:{marginID:36918,marginON:36918},
-  MGC:{marginID:2618,marginON:2618}, GC:{marginID:25650,marginON:25650},
-  MCL:{marginID:3200,marginON:3200},  // VERIFIED via BP Effect screenshot
-  CL:{marginID:32000,marginON:32000}, // 10× MCL (proportional to contract size)
-  SIL:{marginID:4400,marginON:4400}, SI:{marginID:22000,marginON:22000},
-  MBT:{marginID:2000,marginON:2000},
-  ETH:{marginID:30000,marginON:30000}, MET:{marginID:400,marginON:400},
-  ZC:{marginID:2475,marginON:2475}, ZW:{marginID:2000,marginON:2000}, ZS:{marginID:2475,marginON:2475},
-  ZT:{marginID:1540,marginON:1540}, ZN:{marginID:2475,marginON:2475}, ZB:{marginID:4620,marginON:4620},
-  M6A:{marginID:209,marginON:209}, A6:{marginID:2090,marginON:2090},
-  M6E:{marginID:297,marginON:297}, E6:{marginID:2970,marginON:2970},
-  M6B:{marginID:220,marginON:220}, B6:{marginID:2200,marginON:2200},
-  MICD:{marginID:110,marginON:110}, C6:{marginID:1100,marginON:1100},
-  S6:{marginID:4950,marginON:4950}, J6:{marginID:3080,marginON:3080},
-  N6:{marginID:2200,marginON:2200}, M6N:{marginID:220,marginON:220}
+  // Index futures
+  MES:{marginID:3070,marginON:3070}, ES:{marginID:30708,marginON:30708},
+  MNQ:{marginID:4760,marginON:4760}, NQ:{marginID:47600,marginON:47600},
+  MYM:{marginID:1803,marginON:1803}, YM:{marginID:18040,marginON:18040},
+  M2K:{marginID:1389,marginON:1389}, RTY:{marginID:13891,marginON:13891},
+  // Metals & energy
+  MGC:{marginID:4107,marginON:4107}, GC:{marginID:41058,marginON:41058},
+  MCL:{marginID:2872,marginON:2872}, CL:{marginID:28663,marginON:28663},
+  SIL:{marginID:14501,marginON:14501}, SI:{marginID:72505,marginON:72505},
+  // Crypto
+  MBT:{marginID:3135,marginON:3135},
+  ETH:{marginID:58756,marginON:58756}, MET:{marginID:115,marginON:115},
+  // Grains
+  ZC:{marginID:1755,marginON:1755}, ZW:{marginID:3330,marginON:3330}, ZS:{marginID:3600,marginON:3600},
+  // Rates
+  ZT:{marginID:1980,marginON:1980}, ZN:{marginID:2475,marginON:2475}, ZB:{marginID:4884,marginON:4884},
+  // FX micro futures
+  M6A:{marginID:229,marginON:229}, M6E:{marginID:290,marginON:290},
+  M6B:{marginID:229,marginON:229}, MICD:{marginID:99,marginON:99},
+  // FX full-size futures
+  A6:{marginID:2299,marginON:2299}, E6:{marginID:2904,marginON:2904},
+  B6:{marginID:2299,marginON:2299}, C6:{marginID:990,marginON:990},
+  S6:{marginID:4840,marginON:4840}, J6:{marginID:4598,marginON:4598},
+  N6:{marginID:1430,marginON:1430}, M6N:{marginID:220,marginON:220}
 };
 
 // Verified instruments — used for sanity-pane confidence message
-var verifiedTOS = {MCL:true, CL:true};
+var verifiedTOS = {
+  MES:true, ES:true, MNQ:true, NQ:true, MYM:true, YM:true, M2K:true, RTY:true,
+  MGC:true, GC:true, MCL:true, CL:true, SIL:true, SI:true,
+  MBT:true, ETH:true, MET:true,
+  ZC:true, ZW:true, ZS:true,
+  ZT:true, ZN:true, ZB:true,
+  M6A:true, A6:true, M6E:true, E6:true, M6B:true, B6:true,
+  MICD:true, C6:true, S6:true, J6:true, N6:true
+};
+
+// Physical delivery detection — flags contracts that could result in actual asset assignment
+function isPhysicalDelivery(ins) {
+  if (!ins || !ins.isFutures) return false;
+  var nonPhysical = {'index':true, 'crypto':true};
+  return !nonPhysical[ins.assetClass];
+}
+function getDeliveryAsset(ins, ik) {
+  if (ins.assetClass === 'fxfut' && ins.contractSize && ins.base) {
+    return ins.contractSize.toLocaleString() + ' ' + ins.base;
+  }
+  var notes = {
+    ZC:'corn (5,000 bushels)', ZW:'wheat (5,000 bushels)', ZS:'soybeans (5,000 bushels)',
+    MCL:'crude oil (100 barrels)', CL:'crude oil (1,000 barrels)',
+    MGC:'gold (10 oz)', GC:'gold (100 oz)',
+    SIL:'silver (1,000 oz)', SI:'silver (5,000 oz)',
+    ZT:'2-Year T-Notes ($200K face)', ZN:'10-Year T-Notes ($100K face)', ZB:'30-Year T-Bonds ($100K face)'
+  };
+  return notes[ik] || 'the underlying';
+}
 
 function getInstrument(key, broker) {
   var base = instrumentsNinja[key];
@@ -221,6 +264,10 @@ var instrumentOptions = '<optgroup label="Index Futures">' +
   '<option value="ES">ES — E-mini S&P 500</option>' +
   '<option value="MNQ">MNQ — Micro E-mini Nasdaq-100</option>' +
   '<option value="NQ">NQ — E-mini Nasdaq-100</option>' +
+  '<option value="MYM">MYM — Micro E-mini Dow</option>' +
+  '<option value="YM">YM — E-mini Dow</option>' +
+  '<option value="M2K">M2K — Micro E-mini Russell 2000</option>' +
+  '<option value="RTY">RTY — E-mini Russell 2000</option>' +
   '</optgroup>' +
   '<optgroup label="Metals / Energy">' +
   '<option value="MGC">MGC — Micro Gold</option>' +
@@ -375,6 +422,18 @@ function createCalc(i) {
       var ins = getInstrument(ik, this.broker);
       if (!ins) { this.clearResults(); return; }
 
+      // Physical delivery warning banner
+      var dw = document.getElementById('deliveryWarn'+i);
+      if (dw) {
+        if (isPhysicalDelivery(ins)) {
+          var da = document.getElementById('deliveryAsset'+i);
+          if (da) da.textContent = getDeliveryAsset(ins, ik);
+          dw.style.display = '';
+        } else {
+          dw.style.display = 'none';
+        }
+      }
+
       var en = parseFloat(document.getElementById('entryPrice'+i).value) || 0;
       var st = parseFloat(document.getElementById('stopPrice'+i).value) || 0;
       var li = parseFloat(document.getElementById('limitPrice'+i).value) || 0;
@@ -462,9 +521,15 @@ function createCalc(i) {
         if (!isNaN(mONOverrideVal) && mONOverrideVal > 0) { marginON = mONOverrideVal; usingOverride = true; }
       }
 
+      var isInvertedFX = ins.assetClass === 'fxInverted';
+      var workEn = en, workSt = st, workLi = li, workDir = this.direction;
+      if (isInvertedFX) {
+        workEn = 1/en; workSt = 1/st; workLi = 1/li;
+        workDir = this.direction === 'long' ? 'short' : 'long';
+      }
       var ptsS, ptsL;
-      if (this.direction === 'long') { ptsS = en - st; ptsL = li - en; }
-      else { ptsS = st - en; ptsL = en - li; }
+      if (workDir === 'long') { ptsS = workEn - workSt; ptsL = workLi - workEn; }
+      else { ptsS = workSt - workEn; ptsL = workEn - workLi; }
       if (ptsS <= 0 || ptsL <= 0) { this.clearResults(); return; }
 
       var tksS = Math.round(ptsS / tickSize);
@@ -478,11 +543,11 @@ function createCalc(i) {
       var tRw = con * rwc;
       var totalMarginID = con * marginID;
       var totalMarginON = con * marginON;
-      var notionalTotal = isSpotFX ? (con * lotSizeUsed * en) : (contractSize ? con * contractSize * en : null);
+      var notionalTotal = isSpotFX ? (con * lotSizeUsed * en) : (contractSize ? con * contractSize * workEn : null);
 
       var tgtP;
-      if (this.direction === 'long') tgtP = en + (ptsL * tp / 100);
-      else tgtP = en - (ptsL * tp / 100);
+      if (this.direction === 'long') tgtP = en + ((li - en) * tp / 100);
+      else tgtP = en - ((en - li) * tp / 100);
 
       var stopPct = (ptsS / en) * 100;
       var leverageImplied = (acct > 0 && tR > 0) ? (notionalTotal ? (notionalTotal / acct) : null) : null;
@@ -555,6 +620,52 @@ function createCalc(i) {
       }
       this.setSanity(sanityClass, sanityH, (sanityMsg || ('Risk computed at $' + tR.toFixed(0) + ' (' + (acct > 0 ? (tR/acct*100).toFixed(2) : '0') + '% of account).')) + marginVerifyMsg);
 
+      // Futures translation panel — auto-computed for USD-base inverted spot pairs (USDCAD, USDCHF, USDJPY)
+      var futPanel = document.getElementById('futTransPanel'+i);
+      if (ins.assetClass === 'fxspot' && ins.futEquiv && en > 0 && st > 0 && li > 0 && rpt > 0 && futPanel) {
+        var futKey = ins.futEquiv;
+        var futIns = getInstrument(futKey, this.broker);
+        if (futIns) {
+          var futEn = 1/en, futSt = 1/st, futLi = 1/li;
+          var futDir = this.direction === 'long' ? 'short' : 'long';
+          var fPtsS, fPtsL;
+          if (futDir === 'long') { fPtsS = futEn - futSt; fPtsL = futLi - futEn; }
+          else { fPtsS = futSt - futEn; fPtsL = futEn - futLi; }
+          if (fPtsS > 0 && fPtsL > 0) {
+            var fTksS = Math.round(fPtsS / futIns.tickSize);
+            var fRpc = fTksS * futIns.tickValue;
+            var fCon = fRpc > 0 ? Math.floor(rpt / fRpc) : 0;
+            if (fCon < 1 && fRpc > 0 && fRpc <= rpt) fCon = 1;
+            var futCode = futKey;
+            var spotName = ins.base + '/' + ins.quote;
+            var futDirUpper = futDir.toUpperCase();
+            var nDec = (futKey === 'J6') ? 7 : 5;
+            var dirColor = (futDir === 'short') ? '#f85149' : '#3fb950';
+            var fMID = fCon * futIns.marginID;
+            var fMON = fCon * futIns.marginON;
+            document.getElementById('futSym'+i).value = futCode + '   (' + spotName + ' inverted)';
+            var futDirEl = document.getElementById('futDir'+i);
+            futDirEl.value = futDirUpper + ' ' + futCode;
+            futDirEl.style.color = dirColor;
+            futDirEl.style.borderColor = dirColor;
+            document.getElementById('futCon'+i).value = fCon + ' × ' + futCode;
+            document.getElementById('futEntry'+i).value = futEn.toFixed(nDec);
+            document.getElementById('futStop'+i).value = futSt.toFixed(nDec);
+            document.getElementById('futLimit'+i).value = futLi.toFixed(nDec);
+            var fmEl = document.getElementById('futMargin'+i);
+            if (fmEl) fmEl.value = '$' + fMID.toLocaleString() + '  /  $' + fMON.toLocaleString();
+            reorderFutPrices(i, futDir);
+            futPanel.style.display = '';
+          } else {
+            futPanel.style.display = 'none';
+          }
+        } else {
+          futPanel.style.display = 'none';
+        }
+      } else if (futPanel) {
+        futPanel.style.display = 'none';
+      }
+
       this.lastResult = {
         symbol: ik, contracts: con, marginID: totalMarginID, marginON: totalMarginON,
         isSpotFX: isSpotFX, notional: notionalTotal, usingOverride: usingOverride
@@ -574,6 +685,7 @@ function createCalc(i) {
         var el = document.getElementById(f+this.index); if (el) el.textContent = '-';
       }.bind(this));
       var pv = document.getElementById('pipValueShown'+this.index); if (pv) pv.textContent = '-';
+      var ft = document.getElementById('futTransPanel'+this.index); if (ft) ft.style.display = 'none';
       this.setSanity('', 'Awaiting inputs', 'Enter entry, stop, target, and risk size to see sanity checks.');
       this.lastResult = null;
       updateSummary();
@@ -601,6 +713,9 @@ function buildHTML(i) {
     '<div class="card"><h4>Parameters</h4>' +
     '<div class="input-group"><label>Instrument</label>' +
     '<select id="instrument'+i+'">' + instrumentOptions + '</select></div>' +
+    '<div id="deliveryWarn'+i+'" class="delivery-warn" style="display:none">' +
+      '⚠ PHYSICAL DELIVERY CONTRACT — close this position BEFORE First Notice Day (typically the business day before last trade date) or you risk being assigned actual <span class="asset" id="deliveryAsset'+i+'">underlying</span>. Watch the calendar.' +
+    '</div>' +
     '<div class="input-group" id="lotSizeRow'+i+'" style="display:none">' +
     '<label>FX Spot Lot Size</label>' +
     '<select id="lotSize'+i+'">' +
@@ -632,7 +747,20 @@ function buildHTML(i) {
     '<div class="input-group"><label>Limit Price (Target)</label><input type="number" class="price-input limit-price" id="limitPrice'+i+'" step="0.0001" placeholder="0.0000"></div>' +
     '<div class="input-group"><label>Entry Price</label><input type="number" class="price-input entry-price" id="entryPrice'+i+'" step="0.0001" placeholder="0.0000"></div>' +
     '<div class="input-group"><label>Stop Price</label><input type="number" class="price-input stop-price" id="stopPrice'+i+'" step="0.0001" placeholder="0.0000"></div>' +
-    '</div></div>' +
+    '</div>' +
+    '<div id="futTransPanel'+i+'" style="display:none;margin-top:18px;padding-top:14px;border-top:2px solid #58a6ff66">' +
+      '<div style="color:#58a6ff;font-size:.9em;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Translate to Futures</div>' +
+      '<div class="input-group"><label>Futures Instrument</label><input type="text" id="futSym'+i+'" class="price-input" style="color:#58a6ff;border-color:#58a6ff" readonly value="-" /></div>' +
+      '<div class="input-group"><label>Futures Direction (flipped from spot)</label><input type="text" id="futDir'+i+'" class="price-input" readonly value="-" /></div>' +
+      '<div class="input-group"><label>Contracts</label><input type="text" id="futCon'+i+'" class="price-input" readonly value="-" /></div>' +
+      '<div id="futPriceInputs'+i+'">' +
+        '<div class="input-group"><label>Futures Limit (Take-profit)</label><input type="text" id="futLimit'+i+'" class="price-input limit-price" readonly value="-" /></div>' +
+        '<div class="input-group"><label>Futures Entry</label><input type="text" id="futEntry'+i+'" class="price-input entry-price" readonly value="-" /></div>' +
+        '<div class="input-group"><label>Futures Stop (Stop-loss)</label><input type="text" id="futStop'+i+'" class="price-input stop-price" readonly value="-" /></div>' +
+      '</div>' +
+      '<div class="input-group"><label>Futures Margin (Intraday / Overnight)</label><input type="text" id="futMargin'+i+'" class="price-input" style="color:#f0ad4e;border-color:#f0ad4e" readonly value="-" /></div>' +
+    '</div>' +
+    '</div>' +
     '<div class="card"><h4>Calculations</h4>' +
     '<div class="results-grid">' +
     '<div class="result-item"><div class="result-label">Points (risk)</div><div class="result-value" id="points'+i+'">-</div></div>' +
@@ -662,6 +790,17 @@ function reorderPrices(i, dir) {
   var lim = c.querySelector('#limitPrice'+i).parentElement;
   var ent = c.querySelector('#entryPrice'+i).parentElement;
   var stp = c.querySelector('#stopPrice'+i).parentElement;
+  c.innerHTML = '';
+  if (dir === 'long') { c.appendChild(lim); c.appendChild(ent); c.appendChild(stp); }
+  else { c.appendChild(stp); c.appendChild(ent); c.appendChild(lim); }
+}
+
+function reorderFutPrices(i, dir) {
+  var c = document.getElementById('futPriceInputs'+i);
+  if (!c) return;
+  var lim = c.querySelector('#futLimit'+i).parentElement;
+  var ent = c.querySelector('#futEntry'+i).parentElement;
+  var stp = c.querySelector('#futStop'+i).parentElement;
   c.innerHTML = '';
   if (dir === 'long') { c.appendChild(lim); c.appendChild(ent); c.appendChild(stp); }
   else { c.appendChild(stp); c.appendChild(ent); c.appendChild(lim); }
